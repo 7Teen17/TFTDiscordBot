@@ -1,7 +1,7 @@
 from discord.ext import commands
 from discord import app_commands
 import discord
-from main import me_command
+from main import botcommands_command, me_command
 from PIL import Image
 from enum import Enum
 from random import choice
@@ -24,10 +24,97 @@ example space dict
 #TODO: test and fill in space data
 space_data = {
     0: (16,0),
-    1: (96, 0),
-    2: (256, 0),
-    3: (),
-    4: ()
+    1: (88, 0),
+    2: (160, 0),
+    3: (232, 0),
+    4: (304, 0),
+    5: (376, 0),
+    6: (448, 0),
+    7: (520, 0),
+    8: (592, 0),
+    9: (664, 0),
+    10: (736, 0),
+    11: (808, 0),
+    12: (880, 0),
+    13: (952, 0),
+    14: (1024, 0),
+    15: (1096, 0),
+    16: (1096, 80),
+    17: (1096, 152),
+    18: (1096, 224),
+    19: (1096, 296),
+    20: (1096, 368),
+    21: (1096, 440),
+    22: (1096, 512),
+    23: (1096, 584),
+    24: (1096, 656),
+    25: (1096, 728),
+    26: (1096, 800),
+    27: (1096, 872),
+    28: (1096, 944),
+    29: (1096, 1016),
+    30: (1096, 1088),
+    31: (1024, 1088),
+    32: (952, 1088),
+    33: (880, 1088),
+    34: (808, 1088),
+    35: (736, 1088),
+    36: (664, 1088),
+    37: (592, 1088),
+    38: (520, 1088),
+    39: (448, 1088),
+    40: (376, 1088),
+    41: (304, 1088),
+    42: (232, 1088),
+    43: (160, 1088),
+    44: (88, 1088),
+    45: (16, 1088),
+    46: (16, 1016),
+    47: (16, 944),
+    48: (16, 872),
+    49: (16, 800),
+    50: (16, 728),
+    51: (16, 656),
+    52: (16, 584),
+    53: (16, 512),
+    54: (16, 440),
+    55: (16, 368),
+    56: (16, 296),
+    57: (16, 224),
+    58: (16, 152),
+    59: (16, 80),
+    "g1": (160, 80),
+    "g2": (160, 152),
+    "g3": (160, 224),
+    "g4": (160, 296),
+    "g5": (160, 368),
+    "r1": (1024, 152),
+    "r2": (952, 152),
+    "r3": (880, 152),
+    "r4": (808, 152),
+    "r5": (736, 152),
+    "b1": (952, 1016),
+    "b2": (952, 944),
+    "b3": (952, 872),
+    "b4": (952, 800),
+    "b5": (952, 728),
+    "y1": (88, 944),
+    "y2": (160, 944),
+    "y3": (232, 944),
+    "y4": (304, 944),
+    "y5": (376, 944),
+    "gh1": (248, 96),
+    "gh2": (304, 128),
+    "gh3": (360, 96),
+    "rh1": (1000, 240),
+    "rh2": (952, 288),
+    "rh3": (1000, 328),
+    "bh1": (752, 960),
+    "bh2": (808, 938),
+    "bh3": (864, 960),
+    "yh1": (112, 832),
+    "yh2": (160, 792),
+    "yh3": (112, 752)
 
 }
 
@@ -36,10 +123,8 @@ space_data = {
 # game state enum?
 class GameState(Enum):
     AWAIT_ACCEPT = 1
-    PLAYERONE_TURN = 2
-    PLAYERTWO_TURN = 3
-    PLAYERTHREE_TURN = 4
-    PLAYERFOUR_TURN = 5
+    DRAW_CARD = 2
+    CHOOSE_PIECE = 3
     GAME_OVER = 6
 
 class Color(Enum):
@@ -62,12 +147,12 @@ class Game():
         self.playerlist = playerlist
         self.gamestate = GameState.AWAIT_ACCEPT
         self.board = {}
+        self.current_turn = 0
         self.current_card = 5
         self.message_id = message_id
         #TODO: figure this out
         for key, value in space_data.items():
-            self.board[key] = {"location": value, "piece": {"color": Color.GREEN, "id": 1}}
-        self.board[0] = {"location": (304,0), "piece": {"color": Color.GREEN, "id": 1}}
+            self.board[key] = {"location": value, "piece": {"color": None, "id": 1}}
 
     def get_player_by_user(self, user: discord.User):
         for player in self.playerlist:
@@ -103,6 +188,28 @@ class Game():
             #player.color = choice(availible_colors)
             #availible_colors.remove(player.color)
 
+        for player in self.playerlist:
+            if player.color == Color.GREEN:
+                self.board["gh1"]["piece"] = {"color": Color.GREEN, "id": 1}
+                self.board["gh2"]["piece"] = {"color": Color.GREEN, "id": 2}
+                self.board["gh3"]["piece"] = {"color": Color.GREEN, "id": 3}
+            elif player.color == Color.YELLOW:
+                self.board["yh1"]["piece"] = {"color": Color.YELLOW, "id": 1}
+                self.board["yh2"]["piece"] = {"color": Color.YELLOW, "id": 2}
+                self.board["yh3"]["piece"] = {"color": Color.YELLOW, "id": 3}
+            elif player.color == Color.BLUE:
+                self.board["bh1"]["piece"] = {"color": Color.BLUE, "id": 1}
+                self.board["bh2"]["piece"] = {"color": Color.BLUE, "id": 2}
+                self.board["bh3"]["piece"] = {"color": Color.BLUE, "id": 3}
+            elif player.color == Color.RED:
+                self.board["rh1"]["piece"] = {"color": Color.RED, "id": 1}
+                self.board["rh2"]["piece"] = {"color": Color.RED, "id": 2}
+                self.board["rh3"]["piece"] = {"color": Color.RED, "id": 3}
+            else:
+                print("ERROR PLAYER HAS NO COLOR")
+
+        self.gamestate = GameState.DRAW_CARD
+
         generate_board(self)
 
 
@@ -115,8 +222,8 @@ def generate_board(game):
     for key, space in game.board.items():
         try:
             board.paste(images[space["piece"]["color"]], space["location"], images[space["piece"]["color"]])
-        except TypeError:
-            print("type error")
+        except KeyError:
+            pass
     board.save("current_frame.png")
 
 #basically a data class
@@ -143,6 +250,7 @@ class Sorry(commands.Cog):
 
     #Base Sorry command
     @me_command()
+    @botcommands_command()
     @commands.group()
     async def sorry(self, ctx):
         if ctx.invoked_subcommand == None:
@@ -192,7 +300,22 @@ class Sorry(commands.Cog):
             return
         game = 17
         await ctx.send("Successfully cancelled the current game.")
+
+
+    @sorry.command()
+    async def draw(self, ctx):
+        global game
+        if game == 17:
+            await ctx.send("No game is currently running.")
+            return
+        if game.get_player_by_user(ctx.author) == None:
+            await ctx.send("You are not in this game!")
+            return
+        if game.get_player_by_user(ctx.author) != game.playerlist[game.current_turn]:
+            await ctx.send("It's not your turn!")
+            return
         
+
 
 
     # EVENTS GROUP
@@ -210,7 +333,7 @@ class Sorry(commands.Cog):
                 game.initialize()
                 with open("current_frame.png", "rb") as f:
                     picture = discord.File(f)
-                    await self.bot.get_guild(reaction.guild_id).get_channel(reaction.channel_id).send("**Heres the current board.**", file=picture)
+                    await self.bot.get_guild(reaction.guild_id).get_channel(reaction.channel_id).send("| ~ ***CURRENT BOARD*** ~ |", file=picture)
         
 
 async def setup(bot: commands.Bot) -> None:

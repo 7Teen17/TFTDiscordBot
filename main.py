@@ -36,7 +36,7 @@ def admin_command():
 
 def botcommands_command():
     async def predicate(ctx):
-        return ctx.channel.name == "bot-commands"
+        return ctx.channel.name == "bot-commands" or ctx.channel.name == "bot-testing"
     return commands.check(predicate)
 
 
