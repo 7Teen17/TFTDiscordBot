@@ -1,3 +1,4 @@
+from re import M
 from discord.ext import commands
 from discord import app_commands
 import discord
@@ -118,9 +119,66 @@ space_data = {
 
 }
 
+class Card(Enum):
+    ONE = 1,
+    TWO = 2,
+    THREE = 3,
+    FOUR = 4,
+    FIVE = 5,
+    SEVEN = 7,
+    EIGHT = 8,
+    NINE = 9,
+    TEN = 10,
+    ELEVEN = 11,
+    TWELVE = 12
+    SORRY = 13
 
+availible_cards = [
+    Card.ONE,
+    Card.ONE,
+    Card.ONE,
+    Card.ONE,
+    Card.ONE,
+    Card.TWO,
+    Card.TWO,
+    Card.TWO,
+    Card.TWO,
+    Card.THREE,
+    Card.THREE,
+    Card.THREE,
+    Card.THREE,
+    Card.FOUR,
+    Card.FOUR,
+    Card.FOUR,
+    Card.FOUR,
+    Card.FIVE,
+    Card.FIVE,
+    Card.FIVE,
+    Card.FIVE,
+    Card.SEVEN,
+    Card.SEVEN,
+    Card.SEVEN,
+    Card.SEVEN,
+    Card.EIGHT,
+    Card.EIGHT,
+    Card.EIGHT,
+    Card.EIGHT,
+    Card.TEN,
+    Card.TEN,
+    Card.TEN,
+    Card.TEN,
+    Card.ELEVEN,
+    Card.ELEVEN,
+    Card.ELEVEN,
+    Card.ELEVEN,
+    Card.SORRY,
+    Card.SORRY,
+    Card.SORRY,
+    Card.SORRY
+]
 
-# game state enum?
+used_cards = []
+
 class GameState(Enum):
     AWAIT_ACCEPT = 1
     DRAW_CARD = 2
@@ -217,13 +275,21 @@ class Game():
             print(player.user.name, player.color)
 
 
-def generate_board(game):
-    board = images["board"].copy()
-    for key, space in game.board.items():
-        try:
-            board.paste(images[space["piece"]["color"]], space["location"], images[space["piece"]["color"]])
-        except KeyError:
-            pass
+def generate_board(game, is_choosing=None):
+    if is_choosing:
+        board = images["board"].copy()
+        for key, space in game.board.items():
+            try:
+                board.paste(images[space["piece"]["color"]], space["location"], images[space["piece"]["color"]])
+            except KeyError:
+                pass
+    else:
+        board = images["board"].copy()
+        for key, space in game.board.items():
+            try:
+                board.paste(images[space["piece"]["color"]], space["location"], images[space["piece"]["color"]])
+            except KeyError:
+                pass
     board.save("current_frame.png")
 
 #basically a data class
@@ -261,6 +327,9 @@ class Sorry(commands.Cog):
     async def create(self, ctx, playercount: int, player2: discord.User, player3: discord.User = None, player4: discord.User = None):
         global game
         playerlist = [Player(i) for i in [ctx.author, player2, player3, player4] if i != None]
+        if len(playerlist) != playercount:
+            await ctx.send("PLAYER COUNT DOESNT MATCH")
+            return
         if game != 17:
             await ctx.send("A game is currently in progress!")
             return
@@ -304,7 +373,7 @@ class Sorry(commands.Cog):
 
     @sorry.command()
     async def draw(self, ctx):
-        global game
+        global game, availible_cards, used_cards
         if game == 17:
             await ctx.send("No game is currently running.")
             return
@@ -314,7 +383,11 @@ class Sorry(commands.Cog):
         if game.get_player_by_user(ctx.author) != game.playerlist[game.current_turn]:
             await ctx.send("It's not your turn!")
             return
-        
+        if len(availible_cards) == 0:
+            availible_cards = used_cards
+            used_cards = []
+        game.current_card = choice(availible_cards)
+        await ctx.send(game.current_card)
 
 
 
