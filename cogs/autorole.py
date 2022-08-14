@@ -24,7 +24,6 @@ class Autorole(commands.Cog):
     with open('data/autoroles.json', 'w') as f:
       json.dump(self.autorole_messages, f, indent=4)
 
-
   @commands.Cog.listener()
   async def on_raw_reaction_add(self, payload):
     with open("data/autoroles.json", "r") as f:

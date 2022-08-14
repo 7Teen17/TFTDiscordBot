@@ -196,7 +196,10 @@ images = {
     Color.RED: Image.open("data/sorryimages/red_piece.png"),
     Color.BLUE: Image.open("data/sorryimages/blue_piece.png"),
     Color.GREEN: Image.open("data/sorryimages/green_piece.png"),
-    Color.YELLOW: Image.open("data/sorryimages/yellow_piece.png")
+    Color.YELLOW: Image.open("data/sorryimages/yellow_piece.png"),
+    1: Image.open("data/sorryimages/one.png"),
+    2: Image.open("data/sorryimages/two.png"),
+    3: Image.open("data/sorryimages/three.png")
 }
 
 class Game():
@@ -210,7 +213,7 @@ class Game():
         self.message_id = message_id
         #TODO: figure this out
         for key, value in space_data.items():
-            self.board[key] = {"location": value, "piece": {"color": None, "id": 1}}
+            self.board[key] = {"location": value, "piece": None}
 
     def get_player_by_user(self, user: discord.User):
         for player in self.playerlist:
@@ -274,21 +277,25 @@ class Game():
         for player in self.playerlist:
             print(player.user.name, player.color)
 
+    def move_piece(self, piece, location):
+        pass
+
 
 def generate_board(game, is_choosing=None):
-    if is_choosing:
+    if not is_choosing:
         board = images["board"].copy()
         for key, space in game.board.items():
             try:
                 board.paste(images[space["piece"]["color"]], space["location"], images[space["piece"]["color"]])
-            except KeyError:
+            except (KeyError, TypeError):
                 pass
     else:
         board = images["board"].copy()
         for key, space in game.board.items():
             try:
-                board.paste(images[space["piece"]["color"]], space["location"], images[space["piece"]["color"]])
-            except KeyError:
+                if space["piece"]["color"] == is_choosing:
+                    board.paste(images[space["piece"]["id"]], space["location"], images[space["piece"]["id"]])
+            except (KeyError, TypeError):
                 pass
     board.save("current_frame.png")
 
@@ -388,6 +395,14 @@ class Sorry(commands.Cog):
             used_cards = []
         game.current_card = choice(availible_cards)
         await ctx.send(game.current_card)
+        generate_board(game, game.get_player_by_user(ctx.author).color)
+        with open("current_frame.png", "rb") as f:
+                    picture = discord.File(f)
+                    message = await ctx.send("Which piece would you like to move?", file=picture)
+                    game.message_id = message.id
+                    await message.add_reaction("1️⃣")
+                    await message.add_reaction("2️⃣")
+                    await message.add_reaction("3️⃣")
 
 
 
@@ -401,12 +416,20 @@ class Sorry(commands.Cog):
             return
         player = game.get_player_by_user(reaction.member)
         if player != None:
-            player.ready = True
-            if game.players_all_ready():
-                game.initialize()
-                with open("current_frame.png", "rb") as f:
-                    picture = discord.File(f)
-                    await self.bot.get_guild(reaction.guild_id).get_channel(reaction.channel_id).send("| ~ ***CURRENT BOARD*** ~ |", file=picture)
+            if game.gamestate == GameState.AWAIT_ACCEPT:
+                player.ready = True
+                if game.players_all_ready():
+                    game.initialize()
+                    with open("current_frame.png", "rb") as f:
+                        picture = discord.File(f)
+                        await self.bot.get_guild(reaction.guild_id).get_channel(reaction.channel_id).send("| ~ ***CURRENT BOARD*** ~ |", file=picture)
+            elif game.gamestate == GameState.DRAW_CARD:
+                if str(reaction.emoji) == "1️⃣":
+                    pass
+                elif str(reaction.emoji) == "2️⃣":
+                    pass
+                elif str(reaction.emoji) == "3️⃣":
+                    pass
         
 
 async def setup(bot: commands.Bot) -> None:
