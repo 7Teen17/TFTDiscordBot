@@ -123,7 +123,7 @@ class Card(Enum):
     ONE = 1,
     TWO = 2,
     THREE = 3,
-    FOUR = 4,
+    FOUR = -4,
     FIVE = 5,
     SEVEN = 7,
     EIGHT = 8,
@@ -271,15 +271,84 @@ class Game():
 
         self.gamestate = GameState.DRAW_CARD
 
+        #TODO: add discord avatar saving here
+
         generate_board(self)
 
 
         for player in self.playerlist:
             print(player.user.name, player.color)
 
-    def move_piece(self, piece, location):
-        pass
+    def get_space_by_piece(self, piece):
+        for key, value in self.board.items():
+            if value["piece"] == piece:
+                return key
+        return None
 
+
+    def move_piece(self, piece, distance):
+        messages = []
+        space = self.get_space_by_piece(piece)
+        _new_space = space
+
+        found_check = False
+
+        #spawn check
+        if space in ["gh1", "gh2", "gh3", "yh1", "yh2", "yh3", "bh1", "bh2", "bh3", "rh1", "rh2", "rh3"]:
+            if piece["color"] == Color.GREEN:
+                #3 is hardcoded for the exit space of green home
+                #negative cards arent checked as thats for on reaction add
+                found_check = True
+                _new_space = 3 + distance
+                messages.append(f"You moved {str(distance)} spaces out of spawn.")
+            elif piece["color"] == Color.YELLOW:
+                found_check = True
+                _new_space = 48 + distance
+                messages.append(f"You moved {str(distance)} spaces out of spawn.")
+            elif piece["color"] == Color.BLUE:
+                found_check = True
+                _new_space = 33 + distance
+                messages.append(f"You moved {str(distance)} spaces out of spawn.")
+            elif piece["color"] == Color.RED:
+                found_check = True
+                _new_space = 16 + distance
+                messages.append(f"You moved {str(distance)} spaces out of spawn.")
+
+            if not found_check:
+                _new_space += distance
+
+            #60 check
+            if _new_space >= 60:
+                _new_space -= 60
+
+            #slide check
+            if _new_space in [1, 9, 16, 24, 31, 39, 46, 54]:
+                if piece["color"] == Color.RED:
+                    if _new_space in [1, 31, 46]:
+                        for i in range(_new_space, _new_space + 4):
+                            if self.board[i]["piece"] != None:
+                                for j in ["rh1", "rh2", "rh3"]:
+                                    if self.board[j]["piece"] == None:
+                                        self.board[j]["piece"] = self.board[i]["piece"]
+                        _new_space += 3
+                elif piece["color"] == Color.BLUE:
+                    pass
+                elif piece["color"] == Color.GREEN:
+                    pass
+                elif piece["color"] == Color.YELLOW:
+                    pass
+
+            #piece in location check
+            try:
+                if self.board[_new_space]["piece"]["color"] == piece["color"]:
+                    return ["Invalid move! You can't move a piece to a space with a piece of your color on it."]
+                elif self.board[_new_space]["piece"]["color"] != None:
+                    pass
+            except AttributeError:
+                pass
+
+
+        return messages
 
 def generate_board(game, is_choosing=None):
     if not is_choosing:
@@ -372,7 +441,7 @@ class Sorry(commands.Cog):
             await ctx.send("You can't cancel a game you weren't invited to.")
             return
         if game.gamestate != GameState.AWAIT_ACCEPT:
-            await ctx.send("Its too late to cancel now!")
+            await ctx.send("It's too late to cancel now!")
             return
         game = 17
         await ctx.send("Successfully cancelled the current game.")
@@ -422,14 +491,24 @@ class Sorry(commands.Cog):
                     game.initialize()
                     with open("current_frame.png", "rb") as f:
                         picture = discord.File(f)
-                        await self.bot.get_guild(reaction.guild_id).get_channel(reaction.channel_id).send("| ~ ***CURRENT BOARD*** ~ |", file=picture)
+                        _channel = self.bot.get_guild(reaction.guild_id).get_channel(reaction.channel_id)
+                        _channel.send("**Here are the colors:")
+                        _msg = "**"
+                        for i in game.playerlist:
+                            _msg = _msg + i.user.mention + ": " + str(i.color)[6:] + "\n"
+                        _msg = _msg + "**"
+                        await _channel.send(_msg)
+                        await _channel.send("| ~ ***CURRENT BOARD*** ~ |", file=picture)
+                        await _channel.send(f"{game.playerlist[game.current_turn].user.mention}, it's your turn!")
+
             elif game.gamestate == GameState.DRAW_CARD:
-                if str(reaction.emoji) == "1️⃣":
-                    pass
-                elif str(reaction.emoji) == "2️⃣":
-                    pass
-                elif str(reaction.emoji) == "3️⃣":
-                    pass
+                if game.current_card != Card.SEVEN:
+                    if str(reaction.emoji) == "1️⃣":
+                        game.move_piece({"color": game.playerlist[game.current_turn].color, "id": 1}, game.current_card)
+                    elif str(reaction.emoji) == "2️⃣":
+                        pass
+                    elif str(reaction.emoji) == "3️⃣":
+                        pass
         
 
 async def setup(bot: commands.Bot) -> None:

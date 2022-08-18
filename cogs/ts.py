@@ -15,6 +15,7 @@ class TaylorSwift(commands.Cog):
         self.total_correct = 0
         self.counter_eligible = True
         self.cooldowns = {}
+        self.is_album = False
         with open("data/ts.json", "r") as f:
             self.total_correct = json.load(f)["correct"]
 
@@ -30,8 +31,46 @@ class TaylorSwift(commands.Cog):
                 self.current_quote = response
                 self.current_user = ctx.author.name
                 self.availible = False
+                self.is_album = False
                 embed = discord.Embed(title="What Taylor Swift song is this from?", description=response["quote"])
                 await ctx.send(embed=embed)
+
+
+    @commands.command()
+    @botcommands_command()
+    async def tayloralbum(self, ctx):
+        if not self.availible:
+            await ctx.send("Awaiting a response, please wait before generating a new one!")
+            return
+        async with aiohttp.ClientSession() as session:
+            async with session.get("https://taylorswiftapi.herokuapp.com/get") as response:
+                response = await response.json()
+                self.current_quote = response
+                self.current_user = ctx.author.name
+                self.availible = False
+                self.is_album = True
+                embed = discord.Embed(title="What Taylor Swift album is this from?", description=response["quote"])
+                await ctx.send(embed=embed)
+
+    @commands.command()
+    @botcommands_command()
+    async def tayloracronym(self, ctx):
+        if not self.availible:
+            await ctx.send("Awaiting a response, please wait before generating a new one!")
+            return
+        async with aiohttp.ClientSession() as session:
+            async with session.get("https://taylorswiftapi.herokuapp.com/get") as response:
+                response = await response.json()
+                self.current_quote = response
+                self.current_user = ctx.author.name
+                self.availible = False
+                self.is_album = False
+                acronym = ""
+                for i in response["song"].split(" "):
+                    acronym = acronym + i[0]
+                embed = discord.Embed(title="What Taylor Swift song has this acronym?", description=acronym.upper())
+                await ctx.send(embed=embed)
+    
 
     @commands.Cog.listener()
     async def on_message(self, message):
@@ -44,10 +83,16 @@ class TaylorSwift(commands.Cog):
             return
         #if not message.author.name == self.current_user:
             #return
-        if "".join(filter(lambda x: x.isalnum(), message.content.lower())) != "".join(filter(lambda x: x.isalnum(), self.current_quote["song"].lower())):
-            await message.reply("Incorrect!")
-            self.counter_eligible = False
-            return
+        if not self.is_album:
+            if "".join(filter(lambda x: x.isalnum(), message.content.lower())) != "".join(filter(lambda x: x.isalnum(), self.current_quote["song"].lower())):
+                await message.reply("Incorrect!")
+                self.counter_eligible = False
+                return
+        else:
+            if "".join(filter(lambda x: x.isalnum(), message.content.lower())) != "".join(filter(lambda x: x.isalnum(), self.current_quote["album"].lower())):
+                await message.reply("Incorrect!")
+                self.counter_eligible = False
+                return
         if self.counter_eligible:
             with open("data/ts.json", "r") as f:
                 self.total_correct = json.load(f)["correct"] + 1
