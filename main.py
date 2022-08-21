@@ -26,7 +26,7 @@ async def on_ready():
 
 def me_command():
     async def predicate(ctx):
-        return ctx.author.id == 743939387334721607
+        return ctx.author.id == 743939387334721607 or ctx.author.id == 862374209309245461
     return commands.check(predicate)
 
 def admin_command():

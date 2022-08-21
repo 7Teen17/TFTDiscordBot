@@ -9,11 +9,6 @@ from random import choice
 
 game = 17
 '''
-example piece dict
-{
-    "color": Color.RED,
-    "id": 1
-}
 
 example space dict
 {
@@ -179,6 +174,8 @@ availible_cards = [
 
 used_cards = []
 
+
+
 class GameState(Enum):
     AWAIT_ACCEPT = 1
     DRAW_CARD = 2
@@ -200,6 +197,13 @@ images = {
     1: Image.open("data/sorryimages/one.png"),
     2: Image.open("data/sorryimages/two.png"),
     3: Image.open("data/sorryimages/three.png")
+}
+
+homes = {
+    Color.RED: ["rh1", "rh2", "rh3"],
+    Color.YELLOW: ["yh1", "yh2", "yh3"],
+    Color.GREEN: ["gh1", "gh2", "gh3"],
+    Color.BLUE: ["bh1", "bh2", "bh3"]
 }
 
 class Game():
@@ -289,65 +293,145 @@ class Game():
     def move_piece(self, piece, distance):
         messages = []
         space = self.get_space_by_piece(piece)
+        print(f"space: {space}")
         _new_space = space
 
-        found_check = False
+        from_spawn = False
 
         #spawn check
         if space in ["gh1", "gh2", "gh3", "yh1", "yh2", "yh3", "bh1", "bh2", "bh3", "rh1", "rh2", "rh3"]:
             if piece["color"] == Color.GREEN:
                 #3 is hardcoded for the exit space of green home
                 #negative cards arent checked as thats for on reaction add
-                found_check = True
+                print("green lel")
                 _new_space = 3 + distance
+                from_spawn = True
                 messages.append(f"You moved {str(distance)} spaces out of spawn.")
             elif piece["color"] == Color.YELLOW:
-                found_check = True
                 _new_space = 48 + distance
+                from_spawn = True
                 messages.append(f"You moved {str(distance)} spaces out of spawn.")
             elif piece["color"] == Color.BLUE:
-                found_check = True
                 _new_space = 33 + distance
+                from_spawn = True
                 messages.append(f"You moved {str(distance)} spaces out of spawn.")
             elif piece["color"] == Color.RED:
-                found_check = True
-                _new_space = 16 + distance
+                _new_space = 18 + distance
+                from_spawn = True
                 messages.append(f"You moved {str(distance)} spaces out of spawn.")
 
-            if not found_check:
-                _new_space += distance
+        if not from_spawn:
+            _new_space = space + distance
 
-            #60 check
-            if _new_space >= 60:
-                _new_space -= 60
+        #60 check
+        if _new_space >= 60:
+            _new_space -= 60
 
-            #slide check
-            if _new_space in [1, 9, 16, 24, 31, 39, 46, 54]:
-                if piece["color"] == Color.RED:
-                    if _new_space in [1, 31, 46]:
-                        for i in range(_new_space, _new_space + 4):
-                            if self.board[i]["piece"] != None:
-                                for j in ["rh1", "rh2", "rh3"]:
-                                    if self.board[j]["piece"] == None:
-                                        self.board[j]["piece"] = self.board[i]["piece"]
-                        _new_space += 3
-                elif piece["color"] == Color.BLUE:
-                    pass
-                elif piece["color"] == Color.GREEN:
-                    pass
-                elif piece["color"] == Color.YELLOW:
-                    pass
+        #slide check
+        if _new_space in [1, 9, 16, 24, 31, 39, 46, 54]:
+            if piece["color"] == Color.RED:
+                if _new_space in [1, 31, 46]:
+                    for i in range(_new_space, _new_space + 4):
+                        if self.board[i]["piece"] != None:
+                            for j in ["rh1", "rh2", "rh3"]:
+                                if self.board[j]["piece"] == None:
+                                    self.board[j]["piece"] = self.board[i]["piece"]
+                                    self.board[i]["piece"] = None
+                                    messages.append("A piece was destroyed! (FIX)")
+                                    break
+                    _new_space += 3
+                elif _new_space in [9, 39, 54]:
+                    for i in range(_new_space, _new_space + 5):
+                        if self.board[i]["piece"] != None:
+                            for j in ["rh1", "rh2", "rh3"]:
+                                if self.board[j]["piece"] == None:
+                                    self.board[j]["piece"] = self.board[i]["piece"]
+                                    self.board[i]["piece"] = None
+                                    messages.append("A piece was destroyed! (FIX)")
+                                    break
+                    _new_space += 4
+            elif piece["color"] == Color.BLUE:
+                if _new_space in [1, 16, 46]:
+                    for i in range(_new_space, _new_space + 4):
+                        if self.board[i]["piece"] != None:
+                            for j in ["bh1", "bh2", "bh3"]:
+                                if self.board[j]["piece"] == None:
+                                    self.board[j]["piece"] = self.board[i]["piece"]
+                                    self.board[i]["piece"] = None
+                                    messages.append("A piece was destroyed! (FIX)")
+                                    break
+                    _new_space += 3
+                elif _new_space in [9, 24, 54]:
+                    for i in range(_new_space, _new_space + 5):
+                        if self.board[i]["piece"] != None:
+                            for j in ["bh1", "bh2", "bh3"]:
+                                if self.board[j]["piece"] == None:
+                                    self.board[j]["piece"] = self.board[i]["piece"]
+                                    self.board[i]["piece"] = None
+                                    messages.append("A piece was destroyed! (FIX)")
+                                    break
+                    _new_space += 4
+            elif piece["color"] == Color.GREEN:
+                if _new_space in [16, 31, 46]:
+                    for i in range(_new_space, _new_space + 4):
+                        if self.board[i]["piece"] != None:
+                            for j in ["gh1", "gh2", "gh3"]:
+                                if self.board[j]["piece"] == None:
+                                    self.board[j]["piece"] = self.board[i]["piece"]
+                                    self.board[i]["piece"] = None
+                                    messages.append("A piece was destroyed! (FIX)")
+                                    break
+                    _new_space += 3
+                elif _new_space in [24, 39, 54]:
+                    for i in range(_new_space, _new_space + 5):
+                        if self.board[i]["piece"] != None:
+                            for j in ["gh1", "gh2", "gh3"]:
+                                if self.board[j]["piece"] == None:
+                                    self.board[j]["piece"] = self.board[i]["piece"]
+                                    self.board[i]["piece"] = None
+                                    messages.append("A piece was destroyed! (FIX)")
+                                    break
+                    _new_space += 4
+            elif piece["color"] == Color.YELLOW:
+                if _new_space in [1, 16, 31]:
+                    for i in range(_new_space, _new_space + 4):
+                        if self.board[i]["piece"] != None:
+                            for j in ["yh1", "yh2", "yh3"]:
+                                if self.board[j]["piece"] == None:
+                                    self.board[j]["piece"] = self.board[i]["piece"]
+                                    self.board[i]["piece"] = None
+                                    messages.append("A piece was destroyed! (FIX)")
+                                    break
+                    _new_space += 3
+                elif _new_space in [9, 24, 39]:
+                    for i in range(_new_space, _new_space + 5):
+                        if self.board[i]["piece"] != None:
+                            for j in ["yh1", "yh2", "yh3"]:
+                                if self.board[j]["piece"] == None:
+                                    self.board[j]["piece"] = self.board[i]["piece"]
+                                    self.board[i]["piece"] = None
+                                    messages.append("A piece was destroyed! (FIX)")
+                                    break
+                    _new_space += 4
 
-            #piece in location check
-            try:
-                if self.board[_new_space]["piece"]["color"] == piece["color"]:
-                    return ["Invalid move! You can't move a piece to a space with a piece of your color on it."]
-                elif self.board[_new_space]["piece"]["color"] != None:
-                    pass
-            except AttributeError:
-                pass
+        #piece in location check
+        try:
+            if self.board[_new_space]["piece"]["color"] == piece["color"]:
+                return ["Invalid move! You can't move a piece to a space with a piece of your color on it."]
+            elif self.board[_new_space]["piece"]["color"] != None:
+                for i in homes[self.board[_new_space]["piece"]["color"]]:
+                    if self.board[i]["piece"] == None:
+                        self.board[i]["piece"] = self.board[_new_space]["piece"]
+                        self.board[_new_space]["piece"] = None
+                        messages.append("You knocked an opponent back to their spawn!")
+                        break
+        except (AttributeError, TypeError):
+            pass
 
-
+        self.board[_new_space]["piece"] = piece
+        self.board[space]["piece"] = None
+        if len(messages) == 0:
+            messages.append(f"You moved {str(distance)} spaces.")
         return messages
 
 def generate_board(game, is_choosing=None):
@@ -492,7 +576,7 @@ class Sorry(commands.Cog):
                     with open("current_frame.png", "rb") as f:
                         picture = discord.File(f)
                         _channel = self.bot.get_guild(reaction.guild_id).get_channel(reaction.channel_id)
-                        _channel.send("**Here are the colors:")
+                        await _channel.send("**Here are the colors:**")
                         _msg = "**"
                         for i in game.playerlist:
                             _msg = _msg + i.user.mention + ": " + str(i.color)[6:] + "\n"
@@ -502,13 +586,43 @@ class Sorry(commands.Cog):
                         await _channel.send(f"{game.playerlist[game.current_turn].user.mention}, it's your turn!")
 
             elif game.gamestate == GameState.DRAW_CARD:
-                if game.current_card != Card.SEVEN:
-                    if str(reaction.emoji) == "1️⃣":
-                        game.move_piece({"color": game.playerlist[game.current_turn].color, "id": 1}, game.current_card)
-                    elif str(reaction.emoji) == "2️⃣":
-                        pass
-                    elif str(reaction.emoji) == "3️⃣":
-                        pass
+                #if game.current_card != Card.SEVEN and game.current_card != Card.TEN and game.current_card != Card.ELEVEN and game.current_card != Card.SORRY:
+                if str(reaction.emoji) == "1️⃣":
+                    messages = game.move_piece({"color": game.playerlist[game.current_turn].color, "id": 1}, game.current_card.value[0])
+                    generate_board(game)
+                    with open("current_frame.png", "rb") as f:
+                        picture = discord.File(f)
+                        _channel = self.bot.get_guild(reaction.guild_id).get_channel(reaction.channel_id)
+                        await _channel.send(*messages)
+                        await _channel.send("| ~ ***CURRENT BOARD*** ~ |", file=picture)
+                        game.current_turn += 1
+                        if game.current_turn >= len(game.playerlist):
+                            game.current_turn = 0
+                        await _channel.send(f"{game.playerlist[game.current_turn].user.mention}, it's your turn!")
+                elif str(reaction.emoji) == "2️⃣":
+                    messages = game.move_piece({"color": game.playerlist[game.current_turn].color, "id": 2}, game.current_card.value[0])
+                    generate_board(game)
+                    with open("current_frame.png", "rb") as f:
+                        picture = discord.File(f)
+                        _channel = self.bot.get_guild(reaction.guild_id).get_channel(reaction.channel_id)
+                        await _channel.send(*messages)
+                        await _channel.send("| ~ ***CURRENT BOARD*** ~ |", file=picture)
+                        game.current_turn += 1
+                        if game.current_turn >= len(game.playerlist):
+                            game.current_turn = 0
+                        await _channel.send(f"{game.playerlist[game.current_turn].user.mention}, it's your turn!")
+                elif str(reaction.emoji) == "3️⃣":
+                    messages = game.move_piece({"color": game.playerlist[game.current_turn].color, "id": 3}, game.current_card.value[0])
+                    generate_board(game)
+                    with open("current_frame.png", "rb") as f:
+                        picture = discord.File(f)
+                        _channel = self.bot.get_guild(reaction.guild_id).get_channel(reaction.channel_id)
+                        await _channel.send(*messages)
+                        await _channel.send("| ~ ***CURRENT BOARD*** ~ |", file=picture)
+                        game.current_turn += 1
+                        if game.current_turn >= len(game.playerlist):
+                            game.current_turn = 0
+                        await _channel.send(f"{game.playerlist[game.current_turn].user.mention}, it's your turn!")
         
 
 async def setup(bot: commands.Bot) -> None:

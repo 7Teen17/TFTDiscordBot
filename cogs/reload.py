@@ -8,7 +8,7 @@ class Reload(commands.Cog):
 
   @commands.command()
   @me_command()
-  async def reload(self, ctx, name):
+  async def reload(self, ctx, name: str):
     await ctx.send("Reloading cog." + name)
     await self.bot.reload_extension("cogs." + name)
     await ctx.send("Done.")
