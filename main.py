@@ -31,7 +31,7 @@ def me_command():
 
 def admin_command():
   async def predicate(ctx):
-    return ctx.author.get_role(918698095573884938) != None
+    return ctx.author.get_role(918698095573884938) != None or ctx.author.get_role(929144746016927795) != None
   return commands.check(predicate)
 
 def botcommands_command():
