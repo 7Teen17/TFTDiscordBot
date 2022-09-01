@@ -1,6 +1,6 @@
 from discord.ext import commands
 
-class Smashorpass(commands.Cog):
+class AutoReactions(commands.Cog):
   def __init__(self, bot):
     self.bot = bot
 
@@ -15,4 +15,4 @@ class Smashorpass(commands.Cog):
         await message.add_reaction("❌")
 
 async def setup(bot):
-  await bot.add_cog(Smashorpass(bot))
+  await bot.add_cog(AutoReactions(bot))

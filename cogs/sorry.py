@@ -104,15 +104,15 @@ space_data = {
     "gh1": (232, 296),
     "gh2": (288, 256),
     "gh3": (344, 296),
-    "rh1": (552, 136),
+    "rh1": (552, 152),
     "rh2": (608, 104),
-    "rh3": (),
-    "bh1": (),
-    "bh2": (),
-    "bh3": (),
-    "yh1": (),
-    "yh2": (),
-    "yh3": (),
+    "rh3": (664, 142),
+    "bh1": (896, 528),
+    "bh2": (952, 480),
+    "bh3": (1008, 528),
+    "yh1": (320, 744),
+    "yh2": (376, 696),
+    "yh3": (432, 744),
     "rs1": (1000, 240),
     "rs2": (952, 288),
     "rs3": (1000, 328),
@@ -176,11 +176,11 @@ availible_cards = [
     Card.ELEVEN,
     Card.ELEVEN,
     Card.ELEVEN,
-    Card.ELEVEN,
-    Card.SORRY,
-    Card.SORRY,
-    Card.SORRY,
-    Card.SORRY
+    Card.ELEVEN
+    #Card.SORRY,
+    #Card.SORRY,
+    #Card.SORRY,
+    #Card.SORRY
 ]
 
 used_cards = []
@@ -210,11 +210,18 @@ images = {
     3: Image.open("data/sorryimages/three.png")
 }
 
-homes = {
+spawns = {
     Color.RED: ["rs1", "rs2", "rs3"],
     Color.YELLOW: ["ys1", "ys2", "ys3"],
     Color.GREEN: ["gs1", "gs2", "gs3"],
     Color.BLUE: ["bs1", "bs2", "bs3"]
+}
+
+homes = {
+    Color.RED: ["r1", "r2", "r3", "r4", "r5"],
+    Color.BLUE: ["b1", "b2", "b3", "b4", "b5"],
+    Color.GREEN: ["g1", "g2", "g3", "g4", "g5"],
+    Color.YELLOW: ["y1", "y2", "y3", "y4", "y5"]
 }
 
 class Game():
@@ -228,7 +235,7 @@ class Game():
         self.message_id = message_id
         for key, value in space_data.items():
             #TODO: CHANGE THIS BACK TO NONE!!!
-            self.board[key] = {"location": value, "piece": {"color":Color.RED, "id": 1}}
+            self.board[key] = {"location": value, "piece": None}
 
     def get_player_by_user(self, user: discord.User):
         for player in self.playerlist:
@@ -290,10 +297,6 @@ class Game():
 
         generate_board(self)
 
-
-        for player in self.playerlist:
-            print(player.user.name, player.color)
-
     def get_space_by_piece(self, piece):
         for key, value in self.board.items():
             if value["piece"] == piece:
@@ -302,41 +305,115 @@ class Game():
 
 
     def move_piece(self, piece, distance):
+        #TODO: maybe reformat messages since its only 1?
         messages = []
         space = self.get_space_by_piece(piece)
-        print(f"space: {space}")
         _new_space = space
 
-        from_spawn = False
+        was_special_space = False
+
+        #add home check auto cancel
+
+        #homerow check
+        if space in ["g1", "g2", "g3", "g4", "g5", "r1", "r2", "r3", "r4", "r5", "y1", "y2", "y3", "y4", "y5", "b1", "b2", "b3", "b4", "b5"]:
+            try:
+                if homes[piece["color"]][homes[piece["color"]].index(space) + distance]:
+                    print("lol IT WORKS")
+                    was_special_space = True
+            except IndexError:
+                return ["Invalid move! That amount would move that piece past home!"]
 
         #spawn check
         if space in ["gs1", "gs2", "gs3", "ys1", "ys2", "ys3", "bs1", "bs2", "bs3", "rs1", "rs2", "rs3"]:
             if piece["color"] == Color.GREEN:
                 #3 is hardcoded for the exit space of green home
                 #negative cards arent checked as thats for on reaction add
-                print("green lel")
                 _new_space = 3 + distance
-                from_spawn = True
+                was_special_space = True
                 messages.append(f"You moved {str(distance)} spaces out of spawn.")
             elif piece["color"] == Color.YELLOW:
                 _new_space = 48 + distance
-                from_spawn = True
+                was_special_space = True
                 messages.append(f"You moved {str(distance)} spaces out of spawn.")
             elif piece["color"] == Color.BLUE:
                 _new_space = 33 + distance
-                from_spawn = True
+                was_special_space = True
                 messages.append(f"You moved {str(distance)} spaces out of spawn.")
             elif piece["color"] == Color.RED:
                 _new_space = 18 + distance
-                from_spawn = True
+                was_special_space = True
                 messages.append(f"You moved {str(distance)} spaces out of spawn.")
 
-        if not from_spawn:
+        if not was_special_space:
             _new_space = space + distance
 
         #60 check
         if _new_space >= 60:
             _new_space -= 60
+
+        #homerow check
+        #TODO: add check if already in homerow, not entering
+        #if isinstance(space, int):
+        
+        if not was_special_space:
+            if space > 50:
+                _homerow_space = space - 60
+            else:
+                _homerow_space = space
+
+            if piece["color"] == Color.GREEN:
+                if _homerow_space < 2 and _new_space > 2:
+                    _amount = _new_space - 2
+                    if _amount == 6:
+                        for i in spawns[self.board[_new_space]["piece"]["color"]]:
+                            if self.board[i]["piece"] == None:
+                                self.board[i]["piece"] = piece
+                                self.board[space]["piece"] = None
+                                messages.append(f"You moved {_amount} spaces into the safe zone!")
+                                return messages
+                    elif _amount > 6:
+                        return ["Invalid move! That amount would move that piece past home!"]
+                    _new_space = ["g1", "g2", "g3", "g4", "g5"][_amount - 1]
+            elif piece["color"] == Color.RED:
+                if _homerow_space < 17 and _new_space > 17:
+                    _amount = _new_space - 17
+                    if _amount == 6:
+                        for i in spawns[self.board[_new_space]["piece"]["color"]]:
+                            if self.board[i]["piece"] == None:
+                                self.board[i]["piece"] = piece
+                                self.board[space]["piece"] = None
+                                messages.append(f"You moved {_amount} spaces into the safe zone!")
+                                return messages
+                    elif _amount > 6:
+                        return ["Invalid move! That amount would move that piece past home!"]
+                    _new_space = ["r1", "r2", "r3", "r4", "r5"][_amount - 1]
+            elif piece["color"] == Color.BLUE:
+                if _homerow_space < 32 and _new_space > 32:
+                    _amount = _new_space - 32
+                    if _amount == 6:
+                        for i in spawns[self.board[_new_space]["piece"]["color"]]:
+                            if self.board[i]["piece"] == None:
+                                self.board[i]["piece"] = piece
+                                self.board[space]["piece"] = None
+                                messages.append(f"You moved {_amount} spaces into the safe zone!")
+                                return messages
+                    elif _amount > 6:
+                        return ["Invalid move! That amount would move that piece past home!"]
+                    _new_space = ["b1", "b2", "b3", "b4", "b5"][_amount - 1]
+            elif piece["color"] == Color.YELLOW:
+                if _homerow_space < 47 and _new_space > 47:
+                    _amount = _new_space - 47
+                    if _amount == 6:
+                        for i in spawns[self.board[_new_space]["piece"]["color"]]:
+                            if self.board[i]["piece"] == None:
+                                self.board[i]["piece"] = piece
+                                self.board[space]["piece"] = None
+                                messages.append(f"You moved {_amount} spaces into the safe zone!")
+                                return messages
+                    elif _amount > 6:
+                        return ["Invalid move! That amount would move that piece past home!"]
+                    _new_space = ["y1", "y2", "y3", "y4", "y5"][_amount - 1]
+
 
         #slide check
         if _new_space in [1, 9, 16, 24, 31, 39, 46, 54]:
@@ -438,7 +515,7 @@ class Game():
             if self.board[_new_space]["piece"]["color"] == piece["color"]:
                 return ["Invalid move! You can't move a piece to a space with a piece of your color on it."]
             elif self.board[_new_space]["piece"]["color"] != None:
-                for i in homes[self.board[_new_space]["piece"]["color"]]:
+                for i in spawns[self.board[_new_space]["piece"]["color"]]:
                     if self.board[i]["piece"] == None:
                         self.board[i]["piece"] = self.board[_new_space]["piece"]
                         self.board[_new_space]["piece"] = None
@@ -447,19 +524,7 @@ class Game():
         except (AttributeError, TypeError):
             pass
 
-        #homerow check
-        #TODO: add check if already in homerow, not entering
-        if space > 50:
-            _homerow_space = space - 60
-        else:
-            _homerow_space = space
 
-        if piece["color"] == Color.GREEN:
-            if _homerow_space < 2 and _new_space > 2:
-                _amount = _new_space - 2
-                if _amount > 6:
-                    return ["Invalid move! You can't move a piece to a space with a piece of your color on it."]
-                _new_space = ["g1", "g2", "g3", "g4", "g5"][_amount]
 
         self.board[_new_space]["piece"] = piece
         self.board[space]["piece"] = None
@@ -504,7 +569,7 @@ class Sorry(commands.Cog):
     # COMMANDS GROUP
 
     #Base Sorry command
-    @admin_command()
+    #@me_command()
     @botcommands_command()
     @commands.group()
     async def sorry(self, ctx):
@@ -617,6 +682,26 @@ class Sorry(commands.Cog):
                     _channel = self.bot.get_guild(reaction.guild_id).get_channel(reaction.channel_id)
                     await _channel.send("It's not your turn!")
                     return
+
+                if game.current_card == Card.SEVEN:
+                    pass
+                    #wait for split emoji reaction
+                    #move piece part 1
+                    #move piece part 2
+                elif game.current_card == Card.TEN:
+                    pass
+                    #wait for 10 or -1
+                    #move piecr
+                elif game.current_card == Card.ELEVEN:
+                    pass
+                    #wait for 11 or switch
+                    #wait for select color
+                    #wait for piece
+                    #custom logic
+                elif game.current_card == Card.SORRY:
+                    pass
+                    #if anything in spawn wait for sorry or 4
+                    #same piece choosing as 11
                 #if game.current_card != Card.SEVEN and game.current_card != Card.TEN and game.current_card != Card.ELEVEN and game.current_card != Card.SORRY:
                 if str(reaction.emoji) == "1️⃣":
                     messages = game.move_piece({"color": game.playerlist[game.current_turn].color, "id": 1}, game.current_card.value[0])
