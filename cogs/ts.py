@@ -4,182 +4,199 @@ from main import botcommands_command
 import aiohttp
 import json
 from time import time
-from random import randint
+from random import randint, choice
 
 tracks = {
-"Tim McGraw": 1,
-"Picture to Burn": 2,
-"Teardrops on My Guitar": 3,
-"A Place in This World": 4,
-"Cold as You": 5,
-"The Outside": 6,
-"Tied Together with a Smile": 7,
-"Stay Beautiful": 8,
-"Should’ve Said No": 9,
-"Mary’s Song (Oh My My My)": 10,
-"Our Song": 11,
-"I’m Only Me When I’m with You": 12,
-"Invisible": 13,
-"A Perfectly Good Heart": 14,
-"Fearless": 1,
-"Fifteen": 2,
-"Love Story": 3,
-"Hey Stephen": 4,
-"White Horse": 5,
-"You Belong with Me": 6,
-"Breath": 7,
-"Tell Me Why": 8,
-"You’re Not Sorry": 9,
-"The Way I Loved You": 10,
-"Forever & Always": 11,
-"The Best Day": 12,
-"Change": 13,
-"Jump Then Fall": 14,
-"Untouchable": 15,
-"Forever & Always (Piano Version)": 16,
-"Come in with the Rain": 17,
-"Superstar": 18,
-"The Other Side of the Door": 19,
-"Today Was a Fairytale": 20,
-"You All Over M": 21,
-"Mr. Perfectly Fine": 22,
-"We Were Happy": 23,
-"That’s Whe": 24,
-"Don’t You": 25,
-"Bye Bye Baby": 26,
-"Mine": 1,
-"Sparks Fly": 2,
-"Back to December": 3,
-"Speak Now": 4,
-"Dear John": 5,
-"Mean": 6,
-"The Story of Us": 7,
-"Never Grow Up": 8,
-"Enchanted": 9,
-"Better than Revenge": 10,
-"Innocent": 12,
-"Haunted": 13,
-"Last Kiss": 14,
-"Long Live": 15,
-"Ours": 16,
-"If This Was a Movie": 17,
-"Superman": 18,
-"State of Grace": 1,
-"Red": 2,
-"Treacherous": 3,
-"I Knew You Were Trouble": 4,
-"All Too Well": 5,
-"22": 6,
-"I Almost Do": 7,
-"We Are Never Ever Getting Back Together": 8,
-"Stay Stay Stay": 9,
-"The Last Time": 10,
-"Holy Ground": 11,
-"Sad Beautiful Tragic": 12,
-"The Lucky One": 13,
-"Everything Has Changed": 14,
-"Starlight": 15,
-"Begin Again": 16,
-"The Moment I Knew": 17,
-"Come Back…Be Here": 18,
-"Girl at Home": 19,
-"Ronan": 20,
-"Better Man": 21,
-"Nothing New": 22,
-"Babe": 23,
-"Message in a Bottle": 24,
-"I Bet You Think About Me": 25,
-"Forever Winter": 26,
-"Run": 27,
-"The Very First Night": 28,
-"All Too Well (10 minute version)": 29,
-"Welcome to New York": 1,
-"Blank Space": 2,
-"Style": 3,
-"Out of the Woods": 4,
-"All You Had to Do Was Stay": 5,
-"Shake It Off": 6,
-"I Wish You Would": 7,
-"Bad Blood": 8,
-"Wildest Dreams": 9,
-"How You Get the Girl": 10,
-"This Love": 11,
-"I Know Places": 12,
-"Clean": 13,
-"Wonderland": 14,
-"You Are in Love": 15,
-"New Romantics": 16,
-"…Ready for It?": 1,
-"End Game": 2,
-"I Did Something Bad": 3,
-"Don’t Blame Me": 4,
-"Delicate": 5,
-"Look What You Made Me Do": 6,
-"So It Goes…": 7,
-"Gorgeous": 8,
-"Getaway Car": 9,
-"King of My Heart": 10,
-"Dancing with Our Hands Tied": 11,
-"Dress": 12,
-"This Is Why We Can’t Have Nice Things": 13,
-"Call It What You Want": 14,
-"New Year’s Day": 15,
-"I Forgot That You Existed": 1,
-"Cruel Summer": 2,
-"Lover": 3,
-"The Man": 4,
-"The Archer": 5,
-"I Think He Knows": 6,
-"Miss Americana & The Heartbreak Prince": 7,
-"Paper Rings": 8,
-"Cornelia Street": 9,
-"Death By A Thousand Cuts": 10,
-"London Boy": 11,
-"Soon You’ll Get Better": 12,
-"False God": 13,
-"You Need to Calm Down": 14,
-"Afterglow": 15,
-"ME!": 16,
-"It’s Nice to Have a Friend": 17,
-"Daylight": 18,
-"The 1": 1,
-"Cardigan": 2,
-"The Last Great American Dynasty": 3,
-"Exile Ft. Bon Iver": 4,
-"My Tears Ricochet": 5,
-"Mirrorball": 6,
-"Seven": 7,
-"August": 8,
-"This is Me Trying": 9,
-"Illicit Affairs": 10,
-"Invisible String": 11,
-"Mad Woman": 12,
-"Epiphany": 13,
-"Betty": 14,
-"Peace": 15,
-"Hoax": 16,
-"The Lakes": 17,
-"willow": 1,
-"champagne problems": 2,
-"gold rush": 3,
-"’tis the damn season": 4,
-"tolerate it": 5,
-"no body, no crime": 6,
-"happiness": 7,
-"​dorothea": 8,
-"coney island": 9,
-"​ivy": 10,
-"cowboy like me": 11,
-"​l​ong story short": 12,
-"marjorie": 13,
-"closure": 14,
-"evermore": 15,
-"right where you left me": 16,
-"it’s time to go": 17
+"Tim McGraw": [1, "Taylor Swift"],
+"Picture to Burn": [2, "Taylor Swift"],
+"Teardrops on My Guitar": [3, "Taylor Swift"],
+"A Place in This World": [4, "Taylor Swift"],
+"Cold as You": [5, "Taylor Swift"],
+"The Outside": [6, "Taylor Swift"],
+"Tied Together with a Smile": [7, "Taylor Swift"],
+"Stay Beautiful": [8, "Taylor Swift"],
+"Should’ve Said No": [9, "Taylor Swift"],
+"Mary’s Song (Oh My My My)": [10, "Taylor Swift"],
+"Our Song": [11, "Taylor Swift"],
+"I’m Only Me When I’m with You": [12, "Taylor Swift"],
+"Invisible": [13, "Taylor Swift"],
+"A Perfectly Good Heart": [14, "Taylor Swift"],
+"Fearless": [1, "Fearless"],
+"Fifteen": [2, "Fearless"],
+"Love Story": [3, "Fearless"],
+"Hey Stephen": [4, "Fearless"],
+"White Horse": [5, "Fearless"],
+"You Belong with Me": [6, "Fearless"],
+"Breathe": [7, "Fearless"],
+"Tell Me Why": [8, "Fearless"],
+"You’re Not Sorry": [9, "Fearless"],
+"The Way I Loved You": [10, "Fearless"],
+"Forever & Always": [11, "Fearless"],
+"The Best Day": [12, "Fearless"],
+"Change": [13, "Fearless"],
+"Jump Then Fall": [14, "Fearless"],
+"Untouchable": [15, "Fearless"],
+"Forever & Always (Piano Version)": [16, "Fearless"],
+"Come in with the Rain": [17, "Fearless"],
+"Superstar": [18, "Fearless"],
+"The Other Side of the Door": [19, "Fearless"],
+"Today Was a Fairytale": [20, "Fearless"],
+"You All Over M": [21, "Fearless"],
+"Mr. Perfectly Fine": [22, "Fearless"],
+"We Were Happy": [23, "Fearless"],
+"That’s Whe": [24, "Fearless"],
+"Don’t You": [25, "Fearless"],
+"Bye Bye Baby": [26, "Fearless"],
+"Mine": [1, "Speak Now"],
+"Sparks Fly": [2, "Speak Now"],
+"Back to December": [3, "Speak Now"],
+"Speak Now": [4, "Speak Now"],
+"Dear John": [5, "Speak Now"],
+"Mean": [6, "Speak Now"],
+"The Story of Us": [7, "Speak Now"],
+"Never Grow Up": [8, "Speak Now"],
+"Enchanted": [9, "Speak Now"],
+"Better than Revenge": [10, "Speak Now"],
+"Innocent": [12, "Speak Now"],
+"Haunted": [13, "Speak Now"],
+"Last Kiss": [14, "Speak Now"],
+"Long Live": [15, "Speak Now"],
+"Ours": [16, "Speak Now"],
+"If This Was a Movie": [17, "Speak Now"],
+"Superman": [18, "Speak Now"],
+"State of Grace": [1, "Red"],
+"Red": [2, "Red"],
+"Treacherous": [3, "Red"],
+"I Knew You Were Trouble": [4, "Red"],
+"All Too Well": [5, "Red"],
+"22": [6, "Red"],
+"I Almost Do": [7, "Red"],
+"We Are Never Ever Getting Back Together": [8, "Red"],
+"Stay Stay Stay": [9, "Red"],
+"The Last Time": [10, "Red"],
+"Holy Ground": [11, "Red"],
+"Sad Beautiful Tragic": [12, "Red"],
+"The Lucky One": [13, "Red"],
+"Everything Has Changed": [14, "Red"],
+"Starlight": [15, "Red"],
+"Begin Again": [16, "Red"],
+"The Moment I Knew": [17, "Red"],
+"Come Back…Be Here": [18, "Red"],
+"Girl at Home": [19, "Red"],
+"Ronan": [20, "Red"],
+"Better Man": [21, "Red"],
+"Nothing New": [22, "Red"],
+"Babe": [23, "Red"],
+"Message in a Bottle": [24, "Red"],
+"I Bet You Think About Me": [25, "Red"],
+"Forever Winter": [26, "Red"],
+"Run": [27, "Red"],
+"The Very First Night": [28, "Red"],
+"All Too Well (10 minute version)": [29, "Red"],
+"Welcome to New York": [1, "1989"],
+"Blank Space": [2, "1989"],
+"Style": [3, "1989"],
+"Out of the Woods": [4, "1989"],
+"All You Had to Do Was Stay": [5, "1989"],
+"Shake It Off": [6, "1989"],
+"I Wish You Would": [7, "1989"],
+"Bad Blood": [8, "1989"],
+"Wildest Dreams": [9, "1989"],
+"How You Get the Girl": [10, "1989"],
+"This Love": [11, "1989"],
+"I Know Places": [12, "1989"],
+"Clean": [13, "1989"],
+"Wonderland": [14, "1989"],
+"You Are in Love": [15, "1989"],
+"New Romantics": [16, "1989"],
+"…Ready for It?": [1, "Reputation"],
+"End Game": [2, "Reputation"],
+"I Did Something Bad": [3, "Reputation"],
+"Don’t Blame Me": [4, "Reputation"],
+"Delicate": [5, "Reputation"],
+"Look What You Made Me Do": [6, "Reputation"],
+"So It Goes…": [7, "Reputation"],
+"Gorgeous": [8, "Reputation"],
+"Getaway Car": [9, "Reputation"],
+"King of My Heart": [10, "Reputation"],
+"Dancing with Our Hands Tied": [11, "Reputation"],
+"Dress": [12, "Reputation"],
+"This Is Why We Can’t Have Nice Things": [13, "Reputation"],
+"Call It What You Want": [14, "Reputation"],
+"New Year’s Day": [15, "Reputation"],
+"I Forgot That You Existed": [1, "Lover"],
+"Cruel Summer": [2, "Lover"],
+"Lover": [3, "Lover"],
+"The Man": [4, "Lover"],
+"The Archer": [5, "Lover"],
+"I Think He Knows": [6, "Lover"],
+"Miss Americana & The Heartbreak Prince": [7, "Lover"],
+"Paper Rings": [8, "Lover"],
+"Cornelia Street": [9, "Lover"],
+"Death By A Thousand Cuts": [10, "Lover"],
+"London Boy": [11, "Lover"],
+"Soon You’ll Get Better": [12, "Lover"],
+"False God": [13, "Lover"],
+"You Need to Calm Down": [14, "Lover"],
+"Afterglow": [15, "Lover"],
+"ME!": [16, "Lover"],
+"It’s Nice to Have a Friend": [17, "Lover"],
+"Daylight": [18, "Lover"],
+"The 1": [1, "Folklore"],
+"Cardigan": [2, "Folklore"],
+"The Last Great American Dynasty": [3, "Folklore"],
+"Exile Ft. Bon Iver": [4, "Folklore"],
+"My Tears Ricochet": [5, "Folklore"],
+"Mirrorball": [6, "Folklore"],
+"Seven": [7, "Folklore"],
+"August": [8, "Folklore"],
+"This is Me Trying": [9, "Folklore"],
+"Illicit Affairs": [10, "Folklore"],
+"Invisible String": [11, "Folklore"],
+"Mad Woman": [12, "Folklore"],
+"Epiphany": [13, "Folklore"],
+"Betty": [14, "Folklore"],
+"Peace": [15, "Folklore"],
+"Hoax": [16, "Folklore"],
+"The Lakes": [17, "Folklore"],
+"willow": [1, "Evermore"],
+"champagne problems": [2, "Evermore"],
+"gold rush": [3, "Evermore"],
+"’tis the damn season": [4, "Evermore"],
+"tolerate it": [5, "Evermore"],
+"no body, no crime": [6, "Evermore"],
+"happiness": [7, "Evermore"],
+"​dorothea": [8, "Evermore"],
+"coney island": [9, "Evermore"],
+"​ivy": [10, "Evermore"],
+"cowboy like me": [11, "Evermore"],
+"​l​ong story short": [12, "Evermore"],
+"marjorie": [13, "Evermore"],
+"closure": [14, "Evermore"],
+"evermore": [15, "Evermore"],
+"right where you left me": [16, "Evermore"],
+"it’s time to go": [17, "Evermore"]
 
 }
 
-
+collabs = {
+    "Breathe": ["Breathe", "Breathe Featuring Colbie Caillat"],
+    "You All Over Me": ["You All Over Me", "You All Over Me Featuring Maren Morris"],
+    "That's When": ["That's When", "That's When Featuring Keith Urban"],
+    "The Last Time": ["The Last Time", "The Last Time Featuring Gary Lightbody"],
+    "Everything Has Changed": ["Everything Has Changed", "Everything Has Changed Featuring Ed Sheeran"],
+    "Nothing New": ["Nothing New", "Phoebe Bridgers"],
+    "I Bet You Think About Me": ["I Bet You Think About Me", "I Bet You Think About Me Featuring Chris Stapleton"],
+    "Run": ["Run", "Run Featuring Ed Sheeran"],
+    "End Game": ["End Game", "End Game Featuring Ed Sheeran"],
+    "Soon You'll Get Better": ["Soon You'll Get Better", "Soon You'll Get Better Featuring The Chicks"],
+    "ME!": ["ME!", "ME! Featuring Brendon Urie"],
+    "exile": ["exile", "exile Featuring Bon Iver"],
+    "no body, no crime": ["no body, no crime", "no body, no crime Featuring HAIM"],
+    "coney island": ["coney island", "coney island Featuring The National"],
+    "evermore": ["evermore", "evermore Featuring Bon Iver"],
+    "Lover": ["Lover", "Lover Featuring Shawn Mendes"]
+}
 
 class TaylorSwift(commands.Cog):
 
@@ -191,7 +208,7 @@ class TaylorSwift(commands.Cog):
         self.total_correct = 0
         self.counter_eligible = True
         self.cooldowns = {}
-        self.is_album = False
+        self.current_mode = "quote"
         self.atwcooldown = time() - 780
         with open("data/ts.json", "r") as f:
             self.total_correct = json.load(f)["correct"]
@@ -205,10 +222,14 @@ class TaylorSwift(commands.Cog):
         async with aiohttp.ClientSession() as session:
             async with session.get("https://taylorswiftapi.herokuapp.com/get") as response:
                 response = await response.json()
-                self.current_quote = response
+                if response["song"] != "Gateway Car":
+                    self.current_quote = response
+                else:
+                    response["song"] = "Getaway Car"
+                    self.current_quote = response
                 self.current_user = ctx.author.name
                 self.availible = False
-                self.is_album = False
+                self.current_mode = "quote"
                 embed = discord.Embed(title="What Taylor Swift song is this from?", description=response["quote"])
                 await ctx.send(embed=embed)
 
@@ -218,7 +239,22 @@ class TaylorSwift(commands.Cog):
         if not self.availible:
             await ctx.send("Awaiting a response, please wait before generating a new one!")
             return
-        response = tracks[randint(0, len(tracks)-1)]
+        album = 17
+        keys = [key for key in tracks.keys()]
+        for i in range(2):
+            song = keys[randint(0, len(tracks)-1)]
+            track = tracks[song][0]
+            album = tracks[song][1]
+            if album in ["1989", "Folklore", "Evermore", "Reputation", "Lover"]:
+                break
+            
+
+        self.current_quote = {"quote": "", "song": song, "album": album, "track": track}
+        self.current_user = ctx.author.name
+        self.availible = False
+        self.current_mode = "track"
+        embed = discord.Embed(title="What track number is this Taylor Swift song?", description=song)
+        await ctx.send(embed=embed)
 
 
     @commands.command(aliases=["tal"])
@@ -230,10 +266,14 @@ class TaylorSwift(commands.Cog):
         async with aiohttp.ClientSession() as session:
             async with session.get("https://taylorswiftapi.herokuapp.com/get") as response:
                 response = await response.json()
-                self.current_quote = response
+                if response["song"] != "Gateway Car":
+                    self.current_quote = response
+                else:
+                    response["song"] = "Getaway Car"
+                    self.current_quote = response
                 self.current_user = ctx.author.name
                 self.availible = False
-                self.is_album = True
+                self.current_mode = "album"
                 embed = discord.Embed(title="What Taylor Swift album is this from?", description=response["quote"])
                 await ctx.send(embed=embed)
 
@@ -246,12 +286,18 @@ class TaylorSwift(commands.Cog):
         async with aiohttp.ClientSession() as session:
             async with session.get("https://taylorswiftapi.herokuapp.com/get") as response:
                 response = await response.json()
-                self.current_quote = response
+                if response["song"] != "Gateway Car":
+                    self.current_quote = response
+                else:
+                    response["song"] = "Getaway Car"
+                    self.current_quote = response
                 if self.current_quote["song"] == "All Too Well":
                     self.current_quote["song"] = "All Too Well Ten Minute Version Taylor's Version From The Vault"
+                if self.current_quote["song"] in [i for i in collabs.keys()]:
+                    self.current_quote ["song"] = choice(collabs[self.current_quote["song"]])
                 self.current_user = ctx.author.name
                 self.availible = False
-                self.is_album = False
+                self.current_mode = "quote"
                 acronym = ""
                 for i in response["song"].split(" "):
                     acronym = acronym + i[0]
@@ -270,13 +316,18 @@ class TaylorSwift(commands.Cog):
             return
         #if not message.author.name == self.current_user:
             #return
-        if not self.is_album:
+        if self.current_mode == "quote":
             if "".join(filter(lambda x: x.isalnum(), message.content.lower())) != "".join(filter(lambda x: x.isalnum(), self.current_quote["song"].lower())):
                 await message.reply("Incorrect!")
                 self.counter_eligible = False
                 return
-        else:
+        elif self.current_mode == "album":
             if "".join(filter(lambda x: x.isalnum(), message.content.lower())) != "".join(filter(lambda x: x.isalnum(), self.current_quote["album"].lower())):
+                await message.reply("Incorrect!")
+                self.counter_eligible = False
+                return
+        elif self.current_mode == "track":
+            if message.content.lower() != str(self.current_quote["track"]):
                 await message.reply("Incorrect!")
                 self.counter_eligible = False
                 return
@@ -300,7 +351,10 @@ class TaylorSwift(commands.Cog):
             #await ctx.send("You are not the one that generated the quote!")
             #return
         self.availible = True
-        await ctx.send(f"**Correct Answer:** {self.current_quote['song']}\n**Album:** {self.current_quote['album']}")
+        if self.current_mode == "track":
+            await ctx.send(f"**Correct Track:** {self.current_quote['track']}\n**Song:** {self.current_quote['song']}\n**Album:** {self.current_quote['album']}")
+        else:
+            await ctx.send(f"**Correct Answer:** {self.current_quote['song']}\n**Album:** {self.current_quote['album']}")
 
     @commands.command()
     @botcommands_command()

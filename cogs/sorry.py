@@ -16,6 +16,7 @@ example space dict
 }
 '''
 
+
 #TODO: test and fill in space data
 space_data = {
     0: (16,0),
@@ -313,6 +314,9 @@ class Game():
         was_special_space = False
 
         #add home check auto cancel
+        if isinstance(space, str):
+            if distance < 0:
+                return ["You can't move backwards in spawn or in the home row!"]
 
         #homerow check
         if space in ["g1", "g2", "g3", "g4", "g5", "r1", "r2", "r3", "r4", "r5", "y1", "y2", "y3", "y4", "y5", "b1", "b2", "b3", "b4", "b5"]:
@@ -362,7 +366,7 @@ class Game():
                 _homerow_space = space
 
             if piece["color"] == Color.GREEN:
-                if _homerow_space < 2 and _new_space > 2:
+                if _homerow_space < 2 and _new_space > 2 and _new_space < 15:
                     _amount = _new_space - 2
                     if _amount == 6:
                         for i in spawns[self.board[_new_space]["piece"]["color"]]:
@@ -375,7 +379,7 @@ class Game():
                         return ["Invalid move! That amount would move that piece past home!"]
                     _new_space = ["g1", "g2", "g3", "g4", "g5"][_amount - 1]
             elif piece["color"] == Color.RED:
-                if _homerow_space < 17 and _new_space > 17:
+                if _homerow_space < 17 and _new_space > 17 and _new_space < 40:
                     _amount = _new_space - 17
                     if _amount == 6:
                         for i in spawns[self.board[_new_space]["piece"]["color"]]:
@@ -388,7 +392,7 @@ class Game():
                         return ["Invalid move! That amount would move that piece past home!"]
                     _new_space = ["r1", "r2", "r3", "r4", "r5"][_amount - 1]
             elif piece["color"] == Color.BLUE:
-                if _homerow_space < 32 and _new_space > 32:
+                if _homerow_space < 32 and _new_space > 32 and _new_space < 50:
                     _amount = _new_space - 32
                     if _amount == 6:
                         for i in spawns[self.board[_new_space]["piece"]["color"]]:
@@ -638,7 +642,7 @@ class Sorry(commands.Cog):
             availible_cards = used_cards
             used_cards = []
         game.current_card = choice(availible_cards)
-        await ctx.send(game.current_card)
+        await ctx.send(f"**You drew: {str(game.current_card)[5:]}**")
         generate_board(game, game.get_player_by_user(ctx.author).color)
         with open("current_frame.png", "rb") as f:
                     picture = discord.File(f)
@@ -647,6 +651,9 @@ class Sorry(commands.Cog):
                     await message.add_reaction("1️⃣")
                     await message.add_reaction("2️⃣")
                     await message.add_reaction("3️⃣")
+        async def check(reaction):
+            pass
+        await self.bot.wait_for("on_raw_reaction_add", check=check)
 
 
 
@@ -660,6 +667,7 @@ class Sorry(commands.Cog):
             return
         player = game.get_player_by_user(reaction.member)
         if player != None:
+            _channel = self.bot.get_guild(reaction.guild_id).get_channel(reaction.channel_id)
             if game.gamestate == GameState.AWAIT_ACCEPT:
                 player.ready = True
                 if game.players_all_ready():
@@ -684,7 +692,15 @@ class Sorry(commands.Cog):
                     return
 
                 if game.current_card == Card.SEVEN:
-                    pass
+                    sevenembed = discord.Embed(title="What number split do you want to do?", description=":red_circle: - 1 / 6 Split\n:blue_circle: - 5 / 2 Split\n:green_circle: - 3 / 4 Split\n:yellow_circle: - No Split")
+                    _message = await _channel.send(embed=sevenembed)
+                    await _message.add_reaction("🔴")
+                    await _message.add_reaction("🔵")
+                    await _message.add_reaction("🟢")
+                    await _message.add_reaction("🟡")
+                    async def check(reaction):
+                        return reaction.message_id == _message.id
+                    reaction = await self.bot.wait_for("on_raw_reaction_add", check=check)
                     #wait for split emoji reaction
                     #move piece part 1
                     #move piece part 2
