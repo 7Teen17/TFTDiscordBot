@@ -36,6 +36,8 @@ class Level(commands.Cog):
       
   @commands.Cog.listener()
   async def on_message(self, message):
+    if message.guild.id != 917800744453804043:
+      return
     if message.author.bot or message.channel.id == 1000212818064310374:
       return
     valid = 0
