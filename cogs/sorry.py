@@ -1,3 +1,4 @@
+from tkinter import PIESLICE
 from discord.ext import commands
 from discord import app_commands
 import discord
@@ -8,12 +9,6 @@ from random import choice
 
 game = 17
 
-'''
-CURRENT BUGS:
-a piece on the space just before the home row doesnt go in
-prob more lol
-
-'''
 '''
 
 example space dict
@@ -157,10 +152,10 @@ availible_cards = [
     #Card.TWO,
     #Card.TWO,
     #Card.TWO,
-    #Card.THREE,
-    #Card.THREE,
-    #Card.THREE,
-    #Card.THREE,
+    Card.THREE,
+    Card.THREE,
+    Card.THREE,
+    Card.THREE
     #Card.FOUR,
     #Card.FOUR,
     #Card.FOUR,
@@ -181,10 +176,10 @@ availible_cards = [
     #Card.TEN,
     #Card.TEN,
     #Card.TEN,
-    Card.ELEVEN,
-    Card.ELEVEN,
-    Card.ELEVEN,
-    Card.ELEVEN
+    #Card.ELEVEN,
+    #Card.ELEVEN,
+    #Card.ELEVEN,
+    #Card.ELEVEN,
     #Card.SORRY,
     #Card.SORRY,
     #Card.SORRY,
@@ -239,11 +234,18 @@ spawns = {
     Color.BLUE: ["bs1", "bs2", "bs3"]
 }
 
-homes = {
+home_row = {
     Color.RED: ["r1", "r2", "r3", "r4", "r5"],
     Color.BLUE: ["b1", "b2", "b3", "b4", "b5"],
     Color.GREEN: ["g1", "g2", "g3", "g4", "g5"],
     Color.YELLOW: ["y1", "y2", "y3", "y4", "y5"]
+}
+
+homes = {
+    Color.RED: ["rh1", "rh2", "rh3"],
+    Color.BLUE: ["bh1", "bh2", "bh3"],
+    Color.GREEN: ["gh1", "gh2", "gh3"],
+    Color.YELLOW: ["yh1", "yh2", "yh3"]
 }
 
 class Game():
@@ -258,6 +260,12 @@ class Game():
         self.already_drew = False
         for key, value in space_data.items():
             self.board[key] = {"location": value, "piece": None}
+
+    def get_player_by_color(self, color):
+        for player in self.playerlist:
+            if player.color == color:
+                return player
+        return None
 
     def get_player_by_user(self, user: discord.User):
         for player in self.playerlist:
@@ -278,20 +286,20 @@ class Game():
         availible_colors = [Color.RED, Color.BLUE, Color.GREEN, Color.YELLOW]
 
         #OPTION 1: always give green to me
-        #tempplayers = [i for i in self.playerlist]
-        #for player in tempplayers:
-            #if player.user.id == 743939387334721607:
-                #player.color = Color.GREEN
-                #availible_colors.remove(Color.GREEN)
-                #tempplayers.remove(player)
-        #for player in tempplayers:
-            #player.color = choice(availible_colors)
-            #availible_colors.remove(player.color)
-
-        #OPTION 2: actually random
-        for player in self.playerlist:
+        tempplayers = [i for i in self.playerlist]
+        for player in tempplayers:
+            if player.user.id == 743939387334721607:
+                player.color = Color.GREEN
+                availible_colors.remove(Color.GREEN)
+                tempplayers.remove(player)
+        for player in tempplayers:
             player.color = choice(availible_colors)
             availible_colors.remove(player.color)
+
+        #OPTION 2: actually random
+        #for player in self.playerlist:
+            #player.color = choice(availible_colors)
+            #availible_colors.remove(player.color)
 
         for player in self.playerlist:
             if player.color == Color.GREEN:
@@ -327,7 +335,6 @@ class Game():
 
 
     def move_piece(self, piece, distance):
-        #TODO: maybe reformat messages since its only 1?
         messages = []
         space = self.get_space_by_piece(piece)
         _new_space = space
@@ -339,12 +346,22 @@ class Game():
             if distance < 0:
                 return ["You can't move backwards in spawn or in the home row!"]
 
+        if space in ["gh1", "gh2", "gh3", "yh1", "yh2", "yh3", "bh1", "bh2", "bh3", "rh1", "rh2", "rh3"]:
+            return ["You can't move a piece that is already home."]
+
         #homerow check
         if space in ["g1", "g2", "g3", "g4", "g5", "r1", "r2", "r3", "r4", "r5", "y1", "y2", "y3", "y4", "y5", "b1", "b2", "b3", "b4", "b5"]:
             try:
-                print(homes[piece["color"]][homes[piece["color"]].index(space) + distance])
-                if homes[piece["color"]][homes[piece["color"]].index(space) + distance]:
+                if home_row[piece["color"]].index(space) + distance + 1 == 6:
+                    for i in homes[self.board[_new_space]["piece"]["color"]]:
+                            if self.board[i]["piece"] == None:
+                                self.board[i]["piece"] = piece
+                                self.board[space]["piece"] = None
+                                messages.append(f"**You moved {distance} spaces and landed in home!**")
+                                return messages
+                if home_row[piece["color"]][home_row[piece["color"]].index(space) + distance]:
                     was_special_space = True
+                    _new_space = home_row[piece["color"]][home_row[piece["color"]].index(space) + distance]
             except IndexError:
                 return ["Invalid move! That amount would move that piece past home!"]
 
@@ -373,11 +390,12 @@ class Game():
             _new_space = space + distance
 
         #60 check
-        if _new_space >= 60:
-            _new_space -= 60
+        if isinstance(_new_space, int):
+            if _new_space >= 60:
+                _new_space -= 60
 
-        if _new_space < 0:
-            _new_space += 60
+            if _new_space < 0:
+                _new_space += 60
 
         #homerow check
         #TODO: add check if already in homerow, not entering
@@ -390,10 +408,12 @@ class Game():
                 _homerow_space = space
 
             if piece["color"] == Color.GREEN:
-                if _homerow_space < 2 and _new_space > 2 and _new_space < 15:
+                if _homerow_space <= 2 and _new_space > 2 and _new_space < 15:
                     _amount = _new_space - 2
+                    #TODO: ADD THIS FOR ALL 4 AND TEST
+                    print(_amount)
                     if _amount == 6:
-                        for i in spawns[self.board[_new_space]["piece"]["color"]]:
+                        for i in homes[self.board[_new_space]["piece"]["color"]]:
                             if self.board[i]["piece"] == None:
                                 self.board[i]["piece"] = piece
                                 self.board[space]["piece"] = None
@@ -403,10 +423,11 @@ class Game():
                         return ["Invalid move! That amount would move that piece past home!"]
                     _new_space = ["g1", "g2", "g3", "g4", "g5"][_amount - 1]
             elif piece["color"] == Color.RED:
-                if _homerow_space < 17 and _new_space > 17 and _new_space < 40:
+                if _homerow_space <= 17 and _new_space > 17 and _new_space < 40:
                     _amount = _new_space - 17
+                    print(_amount)
                     if _amount == 6:
-                        for i in spawns[self.board[_new_space]["piece"]["color"]]:
+                        for i in homes[self.board[_new_space]["piece"]["color"]]:
                             if self.board[i]["piece"] == None:
                                 self.board[i]["piece"] = piece
                                 self.board[space]["piece"] = None
@@ -416,10 +437,11 @@ class Game():
                         return ["Invalid move! That amount would move that piece past home!"]
                     _new_space = ["r1", "r2", "r3", "r4", "r5"][_amount - 1]
             elif piece["color"] == Color.BLUE:
-                if _homerow_space < 32 and _new_space > 32 and _new_space < 50:
+                if _homerow_space <= 32 and _new_space > 32 and _new_space < 50:
                     _amount = _new_space - 32
+                    print(_amount)
                     if _amount == 6:
-                        for i in spawns[self.board[_new_space]["piece"]["color"]]:
+                        for i in homes[self.board[_new_space]["piece"]["color"]]:
                             if self.board[i]["piece"] == None:
                                 self.board[i]["piece"] = piece
                                 self.board[space]["piece"] = None
@@ -429,10 +451,11 @@ class Game():
                         return ["Invalid move! That amount would move that piece past home!"]
                     _new_space = ["b1", "b2", "b3", "b4", "b5"][_amount - 1]
             elif piece["color"] == Color.YELLOW:
-                if _homerow_space < 47 and _new_space > 47:
+                if _homerow_space <= 47 and _new_space > 47:
                     _amount = _new_space - 47
+                    print(_amount)
                     if _amount == 6:
-                        for i in spawns[self.board[_new_space]["piece"]["color"]]:
+                        for i in homes[self.board[_new_space]["piece"]["color"]]:
                             if self.board[i]["piece"] == None:
                                 self.board[i]["piece"] = piece
                                 self.board[space]["piece"] = None
@@ -560,6 +583,29 @@ class Game():
             messages.append(f"You moved {str(distance)} spaces.")
         return messages
 
+async def check_if_won(ctx):
+    global game
+    colors = [i.color for i in game.playerlist]
+    for key, homeslist in homes.items():
+        if key in colors:
+            won = True
+            for j in homeslist:
+                if game.board[j]["piece"] == None:
+                    won = False
+                    break
+            if won:
+                with open("data/sorryimages/end_screen.png", "rb") as f:
+                    picture = discord.File(f)
+                winner = game.get_player_by_color(key)
+                await ctx.send(f"{winner.user.mention} won! Congratulations!", file=picture)
+                mentions = ""
+                for i in game.playerlist:
+                    if i != winner:
+                        mentions = mentions + i.user.mention
+                await ctx.send(f"Better luck next time {mentions}.")
+                game = 17
+                break
+
 def generate_board(game, is_choosing=None):
     if not is_choosing:
         board = images["board"].copy()
@@ -599,6 +645,7 @@ class Sorry(commands.Cog):
     #Base Sorry command
     #@me_command()
     @botcommands_command()
+    @me_command()
     @commands.group()
     async def sorry(self, ctx):
         if ctx.invoked_subcommand == None:
@@ -649,6 +696,45 @@ class Sorry(commands.Cog):
         game = 17
         await ctx.send("Successfully cancelled the current game.")
 
+    @sorry.command()
+    async def colors(self, ctx):
+        if game == 17:
+            await ctx.send("No game is currently running.")
+            return
+        if game.get_player_by_user(ctx.author).color == None:
+            await ctx.send("No colors have been selected yet.")
+            return
+        colorsembed = discord.Embed(title="Current Sorry! Colors", description="\n".join([f":{str(i.color)[6:].lower()}_circle: {i.user.mention}" for i in game.playerlist]))
+        await ctx.send(embed=colorsembed)
+
+    @sorry.command()
+    @me_command()
+    async def editpiece(self, ctx, color: str, id: int, destination):
+        piece = {"color": Color[color.upper()], "id": id}
+        location = game.get_space_by_piece(piece)
+        if location == None:
+            await ctx.send("Piece not found.")
+            return
+
+        
+        try:
+            destination = int(destination)
+        except:
+            pass
+        try:
+            if game.board[destination]:
+                game.board[destination]["piece"] = piece
+                game.board[location]["piece"] = None
+                generate_board(game)
+                with open("current_frame.png", "rb") as f:
+                    picture = discord.File(f)
+                    await ctx.send("Successfully modified the board.", file=picture)
+            else:
+                await ctx.send("Could not locate destination space.")
+        except KeyError:
+            await ctx.send("Could not locate destination space.")
+
+
 
     @sorry.command()
     async def draw(self, ctx):
@@ -698,6 +784,7 @@ class Sorry(commands.Cog):
                 reaction = await self.bot.wait_for("raw_reaction_add", check=sevenpiececheck)
                 if str(reaction.emoji) == "1️⃣":
                     messages = game.move_piece({"color": game.playerlist[game.current_turn].color, "id": 1}, 7)
+                    await check_if_won(ctx)
                     generate_board(game)
                     with open("current_frame.png", "rb") as f:
                         picture = discord.File(f)
@@ -712,6 +799,7 @@ class Sorry(commands.Cog):
                         return
                 elif str(reaction.emoji) == "2️⃣":
                     messages = game.move_piece({"color": game.playerlist[game.current_turn].color, "id": 2}, 7)
+                    await check_if_won(ctx)
                     generate_board(game)
                     with open("current_frame.png", "rb") as f:
                         picture = discord.File(f)
@@ -726,6 +814,7 @@ class Sorry(commands.Cog):
                         return
                 elif str(reaction.emoji) == "3️⃣":
                     messages = game.move_piece({"color": game.playerlist[game.current_turn].color, "id": 3}, 7)
+                    await check_if_won(ctx)
                     generate_board(game)
                     with open("current_frame.png", "rb") as f:
                         picture = discord.File(f)
@@ -773,6 +862,7 @@ class Sorry(commands.Cog):
                 reaction = await self.bot.wait_for("raw_reaction_add", check=sevenpiececheck)
                 if str(reaction.emoji) == "1️⃣":
                     messages = game.move_piece({"color": game.playerlist[game.current_turn].color, "id": 1}, 1)
+                    await check_if_won(ctx)
                     generate_board(game)
                     with open("current_frame.png", "rb") as f:
                         picture = discord.File(f)
@@ -787,6 +877,7 @@ class Sorry(commands.Cog):
                         return
                 elif str(reaction.emoji) == "2️⃣":
                     messages = game.move_piece({"color": game.playerlist[game.current_turn].color, "id": 2}, 1)
+                    await check_if_won(ctx)
                     generate_board(game)
                     with open("current_frame.png", "rb") as f:
                         picture = discord.File(f)
@@ -801,6 +892,7 @@ class Sorry(commands.Cog):
                         return
                 elif str(reaction.emoji) == "3️⃣":
                     messages = game.move_piece({"color": game.playerlist[game.current_turn].color, "id": 3}, 1)
+                    await check_if_won(ctx)
                     generate_board(game)
                     with open("current_frame.png", "rb") as f:
                         picture = discord.File(f)
@@ -847,6 +939,7 @@ class Sorry(commands.Cog):
                 reaction = await self.bot.wait_for("raw_reaction_add", check=fivepiececheck)
                 if str(reaction.emoji) == "1️⃣":
                     messages = game.move_piece({"color": game.playerlist[game.current_turn].color, "id": 1}, 2)
+                    await check_if_won(ctx)
                     generate_board(game)
                     with open("current_frame.png", "rb") as f:
                         picture = discord.File(f)
@@ -860,6 +953,7 @@ class Sorry(commands.Cog):
                         return
                 elif str(reaction.emoji) == "2️⃣":
                     messages = game.move_piece({"color": game.playerlist[game.current_turn].color, "id": 2}, 2)
+                    await check_if_won(ctx)
                     generate_board(game)
                     with open("current_frame.png", "rb") as f:
                         picture = discord.File(f)
@@ -874,6 +968,7 @@ class Sorry(commands.Cog):
                         return
                 elif str(reaction.emoji) == "3️⃣":
                     messages = game.move_piece({"color": game.playerlist[game.current_turn].color, "id": 3}, 2)
+                    await check_if_won(ctx)
                     generate_board(game)
                     with open("current_frame.png", "rb") as f:
                         picture = discord.File(f)
@@ -920,6 +1015,7 @@ class Sorry(commands.Cog):
                 reaction = await self.bot.wait_for("raw_reaction_add", check=fourpiececheck) and str(reaction.emoji) in ["1️⃣", "2️⃣", "3️⃣"]
                 if str(reaction.emoji) == "1️⃣":
                     messages = game.move_piece({"color": game.playerlist[game.current_turn].color, "id": 1}, 3)
+                    await check_if_won(ctx)
                     generate_board(game)
                     with open("current_frame.png", "rb") as f:
                         picture = discord.File(f)
@@ -934,6 +1030,7 @@ class Sorry(commands.Cog):
                         return
                 elif str(reaction.emoji) == "2️⃣":
                     messages = game.move_piece({"color": game.playerlist[game.current_turn].color, "id": 2}, 3)
+                    await check_if_won(ctx)
                     generate_board(game)
                     with open("current_frame.png", "rb") as f:
                         picture = discord.File(f)
@@ -948,6 +1045,7 @@ class Sorry(commands.Cog):
                         return
                 elif str(reaction.emoji) == "3️⃣":
                     messages = game.move_piece({"color": game.playerlist[game.current_turn].color, "id": 3}, 3)
+                    await check_if_won(ctx)
                     generate_board(game)
                     with open("current_frame.png", "rb") as f:
                         picture = discord.File(f)
@@ -967,7 +1065,7 @@ class Sorry(commands.Cog):
             await _message.add_reaction("🔴")
             await _message.add_reaction("🔵")
             def tencheck(reaction):
-                    return reaction.message_id == message.id and reaction.user_id == ctx.author.id and str(reaction.emoji) in ["🔴", "🔵"]
+                    return reaction.message_id == _message.id and reaction.user_id == ctx.author.id and str(reaction.emoji) in ["🔴", "🔵"]
             reaction = await self.bot.wait_for("raw_reaction_add", check=tencheck)
             if str(reaction.emoji) == "🔴":
                 generate_board(game, game.get_player_by_user(ctx.author).color)
@@ -983,6 +1081,7 @@ class Sorry(commands.Cog):
                 reaction = await self.bot.wait_for("raw_reaction_add", check=check)
                 if str(reaction.emoji) == "1️⃣":
                     messages = game.move_piece({"color": game.playerlist[game.current_turn].color, "id": 1}, 10)
+                    await check_if_won(ctx)
                     generate_board(game)
                     with open("current_frame.png", "rb") as f:
                         picture = discord.File(f)
@@ -997,6 +1096,7 @@ class Sorry(commands.Cog):
                         return
                 elif str(reaction.emoji) == "2️⃣":
                     messages = game.move_piece({"color": game.playerlist[game.current_turn].color, "id": 2}, 10)
+                    await check_if_won(ctx)
                     generate_board(game)
                     with open("current_frame.png", "rb") as f:
                         picture = discord.File(f)
@@ -1011,6 +1111,7 @@ class Sorry(commands.Cog):
                         return
                 elif str(reaction.emoji) == "3️⃣":
                     messages = game.move_piece({"color": game.playerlist[game.current_turn].color, "id": 3}, 10)
+                    await check_if_won(ctx)
                     generate_board(game)
                     with open("current_frame.png", "rb") as f:
                         picture = discord.File(f)
@@ -1037,6 +1138,7 @@ class Sorry(commands.Cog):
                 reaction = await self.bot.wait_for("raw_reaction_add", check=tenpiececheck)
                 if str(reaction.emoji) == "1️⃣":
                     messages = game.move_piece({"color": game.playerlist[game.current_turn].color, "id": 1}, -1)
+                    await check_if_won(ctx)
                     generate_board(game)
                     with open("current_frame.png", "rb") as f:
                         picture = discord.File(f)
@@ -1051,6 +1153,7 @@ class Sorry(commands.Cog):
                         return
                 elif str(reaction.emoji) == "2️⃣":
                     messages = game.move_piece({"color": game.playerlist[game.current_turn].color, "id": 2}, -1)
+                    await check_if_won(ctx)
                     generate_board(game)
                     with open("current_frame.png", "rb") as f:
                         picture = discord.File(f)
@@ -1065,6 +1168,7 @@ class Sorry(commands.Cog):
                         return
                 elif str(reaction.emoji) == "3️⃣":
                     messages = game.move_piece({"color": game.playerlist[game.current_turn].color, "id": 3}, -1)
+                    await check_if_won(ctx)
                     generate_board(game)
                     with open("current_frame.png", "rb") as f:
                         picture = discord.File(f)
@@ -1096,10 +1200,11 @@ class Sorry(commands.Cog):
                     await message.add_reaction("2️⃣")
                     await message.add_reaction("3️⃣")
                 def elevenpiececheck(reaction):
-                    return reaction.message_id == message.id and reaction.user_id == ctx.author.id and str(reaction.emoji) in ["1️⃣", "2️⃣", "3️⃣"]
+                    return reaction.message_id   == message.id and reaction.user_id == ctx.author.id and str(reaction.emoji) in ["1️⃣", "2️⃣", "3️⃣"]
                 reaction = await self.bot.wait_for("raw_reaction_add", check=elevenpiececheck)
                 if str(reaction.emoji) == "1️⃣":
                     messages = game.move_piece({"color": game.playerlist[game.current_turn].color, "id": 1}, 11)
+                    await check_if_won(ctx)
                     generate_board(game)
                     with open("current_frame.png", "rb") as f:
                         picture = discord.File(f)
@@ -1114,6 +1219,7 @@ class Sorry(commands.Cog):
                         return
                 elif str(reaction.emoji) == "2️⃣":
                     messages = game.move_piece({"color": game.playerlist[game.current_turn].color, "id": 2}, 11)
+                    await check_if_won(ctx)
                     generate_board(game)
                     with open("current_frame.png", "rb") as f:
                         picture = discord.File(f)
@@ -1128,6 +1234,7 @@ class Sorry(commands.Cog):
                         return
                 elif str(reaction.emoji) == "3️⃣":
                     messages = game.move_piece({"color": game.playerlist[game.current_turn].color, "id": 3}, 11)
+                    await check_if_won(ctx)
                     generate_board(game)
                     with open("current_frame.png", "rb") as f:
                         picture = discord.File(f)
@@ -1197,6 +1304,7 @@ class Sorry(commands.Cog):
                         game.already_drew = False
                     #TODO: custom logic here with both variables
                     #make sure to check if the color they chose is their own color
+                    return
 
                 _valid = False
                 for i in game.playerlist:
@@ -1236,7 +1344,186 @@ class Sorry(commands.Cog):
 
                 return
         elif game.current_card == Card.SORRY:
-            pass
+            elevenembed = discord.Embed(title="Would you like to go 4 spaces or execute the **ULTIMATE SORRY ATTACK**?", description=":red_circle: - **4 Spaces**\n:blue_circle: - **ULTIMATE SORRY ATTACK**")
+            _message = await ctx.send(embed=elevenembed)
+            await _message.add_reaction("🔴")
+            await _message.add_reaction("🔵")
+            def sorrycheck(reaction):
+                    return reaction.message_id == _message.id and reaction.user_id == ctx.author.id and str(reaction.emoji) in ["🔴", "🔵"]
+            reaction = await self.bot.wait_for("raw_reaction_add", check=sorrycheck)
+            if str(reaction.emoji) == "🔴":
+                generate_board(game, game.get_player_by_user(ctx.author).color)
+                with open("current_frame.png", "rb") as f:
+                    picture = discord.File(f)
+                    message = await ctx.send("Which piece would you like to move 4 spaces?", file=picture)
+                    game.message_id = message.id
+                    await message.add_reaction("1️⃣")
+                    await message.add_reaction("2️⃣")
+                    await message.add_reaction("3️⃣")
+                def elevenpiececheck(reaction):
+                    return reaction.message_id == message.id and reaction.user_id == ctx.author.id and str(reaction.emoji) in ["1️⃣", "2️⃣", "3️⃣"]
+                reaction = await self.bot.wait_for("raw_reaction_add", check=elevenpiececheck)
+                if str(reaction.emoji) == "1️⃣":
+                    messages = game.move_piece({"color": game.playerlist[game.current_turn].color, "id": 1}, 4)
+                    await check_if_won(ctx)
+                    generate_board(game)
+                    with open("current_frame.png", "rb") as f:
+                        picture = discord.File(f)
+
+                        await ctx.send("\n".join(messages))
+                        await ctx.send("| ~ ***CURRENT BOARD*** ~ |", file=picture)
+                        game.current_turn += 1
+                        if game.current_turn >= len(game.playerlist):
+                            game.current_turn = 0
+                        await ctx.send(f"{game.playerlist[game.current_turn].user.mention}, it's your turn!")
+                        game.already_drew = False
+                        return
+                elif str(reaction.emoji) == "2️⃣":
+                    messages = game.move_piece({"color": game.playerlist[game.current_turn].color, "id": 2}, 4)
+                    await check_if_won(ctx)
+                    generate_board(game)
+                    with open("current_frame.png", "rb") as f:
+                        picture = discord.File(f)
+
+                        await ctx.send("\n".join(messages))
+                        await ctx.send("| ~ ***CURRENT BOARD*** ~ |", file=picture)
+                        game.current_turn += 1
+                        if game.current_turn >= len(game.playerlist):
+                            game.current_turn = 0
+                        await ctx.send(f"{game.playerlist[game.current_turn].user.mention}, it's your turn!")
+                        game.already_drew = False
+                        return
+                elif str(reaction.emoji) == "3️⃣":
+                    messages = game.move_piece({"color": game.playerlist[game.current_turn].color, "id": 3}, 4)
+                    await check_if_won(ctx)
+                    generate_board(game)
+                    with open("current_frame.png", "rb") as f:
+                        picture = discord.File(f)
+
+                        await ctx.send("\n".join(messages))
+                        await ctx.send("| ~ ***CURRENT BOARD*** ~ |", file=picture)
+                        game.current_turn += 1
+                        if game.current_turn >= len(game.playerlist):
+                            game.current_turn = 0
+                        await ctx.send(f"{game.playerlist[game.current_turn].user.mention}, it's your turn!")
+                        game.already_drew = False
+                        return
+            elif str(reaction.emoji) == "🔵":
+                generate_board(game, game.get_player_by_user(ctx.author).color)
+                with open("current_frame.png", "rb") as f:
+                    picture = discord.File(f)
+                    message = await ctx.send("Which piece of yours in spawn would you like to swap?", file=picture)
+                    game.message_id = message.id
+                    await message.add_reaction("1️⃣")
+                    await message.add_reaction("2️⃣")
+                    await message.add_reaction("3️⃣")
+                def elevenpiececheck(reaction):
+                    return reaction.message_id == message.id and reaction.user_id == ctx.author.id and str(reaction.emoji) in ["1️⃣", "2️⃣", "3️⃣"]
+                reaction = await self.bot.wait_for("raw_reaction_add", check=elevenpiececheck)
+                if str(reaction.emoji) == "1️⃣":
+                    _playerpiece = 1
+                if str(reaction.emoji) == "2️⃣":
+                    _playerpiece = 2
+                if str(reaction.emoji) == "3️⃣":
+                    _playerpiece = 3
+                elevenembed = discord.Embed(title="Which color would you like to switch places with?", description=":red_circle: - **Red**\n:blue_circle: - **Blue**\n:green_circle: - **Green**\n:yellow_circle: - **Yellow**")
+                _message = await ctx.send(embed=elevenembed)
+                for i in game.playerlist:
+                    if i.color != game.get_player_by_user(ctx.author).color:
+                        await _message.add_reaction(color_emojis[i.color])
+                def elevencheck(reaction):
+                        return reaction.message_id == _message.id and reaction.user_id == ctx.author.id and str(reaction.emoji) in ["🔴", "🔵", "🟢", "🟡"]
+                opposing_color_reaction = await self.bot.wait_for("raw_reaction_add", check=elevencheck)
+                generate_board(game, emoji_colors[str(opposing_color_reaction.emoji)])
+                with open("current_frame.png", "rb") as f:
+                    picture = discord.File(f)
+                    message = await ctx.send("Which piece would you like to swap with?", file=picture)
+                    game.message_id = message.id
+                    await message.add_reaction("1️⃣")
+                    await message.add_reaction("2️⃣")
+                    await message.add_reaction("3️⃣")
+                def elevenpiececheck(reaction):
+                    return reaction.message_id == message.id and reaction.user_id == ctx.author.id and str(reaction.emoji) in ["1️⃣", "2️⃣", "3️⃣"]
+                reaction = await self.bot.wait_for("raw_reaction_add", check=elevenpiececheck)
+                if str(reaction.emoji) == "1️⃣":
+                    _opponentpiece = 1
+                if str(reaction.emoji) == "2️⃣":
+                    _opponentpiece = 2
+                if str(reaction.emoji) == "3️⃣":
+                    _opponentpiece = 3
+
+                _valid = False
+                for i in game.playerlist:
+                    if i.color == emoji_colors[str(opposing_color_reaction.emoji)]:
+                        _valid = True
+
+                if game.get_player_by_user(ctx.author).color == emoji_colors[str(opposing_color_reaction.emoji)]:
+                    _valid = False
+
+                if not _valid:
+                    await ctx.send("You must choose a valid opponent to swap with!")
+                    generate_board(game)
+                    with open("current_frame.png", "rb") as f:
+                        picture = discord.File(f)
+                        await ctx.send("| ~ ***CURRENT BOARD*** ~ |", file=picture)
+                        game.current_turn += 1
+                        if game.current_turn >= len(game.playerlist):
+                            game.current_turn = 0
+                        await ctx.send(f"{game.playerlist[game.current_turn].user.mention}, it's your turn!")
+                        game.already_drew = False
+
+                if game.get_space_by_piece({"color": game.get_player_by_user(ctx.author).color, "id":_playerpiece}) not in spawns[game.get_player_by_user(ctx.author).color]:
+                    await ctx.send("Your piece must be in your spawn!")
+                    generate_board(game)
+                    with open("current_frame.png", "rb") as f:
+                        picture = discord.File(f)
+                        await ctx.send("| ~ ***CURRENT BOARD*** ~ |", file=picture)
+                        game.current_turn += 1
+                        if game.current_turn >= len(game.playerlist):
+                            game.current_turn = 0
+                        await ctx.send(f"{game.playerlist[game.current_turn].user.mention}, it's your turn!")
+                        game.already_drew = False
+
+
+                if isinstance(game.get_space_by_piece({"color": emoji_colors[str(opposing_color_reaction.emoji)], "id":_opponentpiece}) , str):
+                    await ctx.send("Your opponent's piece cannot be in spawn or the home row!")
+                    generate_board(game)
+                    with open("current_frame.png", "rb") as f:
+                        picture = discord.File(f)
+                        await ctx.send("| ~ ***CURRENT BOARD*** ~ |", file=picture)
+                        game.current_turn += 1
+                        if game.current_turn >= len(game.playerlist):
+                            game.current_turn = 0
+                        await ctx.send(f"{game.playerlist[game.current_turn].user.mention}, it's your turn!")
+                        game.already_drew = False
+                    #TODO: custom logic here with both variables
+                    #make sure to check if the color they chose is their own color
+
+                #TODO: actually move peices
+                _opponentspace = game.get_space_by_piece({"color": emoji_colors[str(opposing_color_reaction.emoji)], "id":_opponentpiece})
+                _playerspace = game.get_space_by_piece({"color": game.get_player_by_user(ctx.author).color, "id":_playerpiece})
+                for j in spawns[emoji_colors[str(opposing_color_reaction.emoji)]]:
+                    if game.board[j]["piece"] == None:
+                        game.board[j]["piece"] = {"color": emoji_colors[str(opposing_color_reaction.emoji)], "id":_opponentpiece}
+                        game.board[_opponentspace]["piece"] = {"color": game.get_player_by_user(ctx.author).color, "id":_playerpiece}
+                        game.board[_playerspace]["piece"] = None
+                        break
+
+                await ctx.send("**-----------------\nULTIMATE SORRY ATTACK COMPLETED\n-----------------**")
+                generate_board(game)
+                with open("current_frame.png", "rb") as f:
+                    picture = discord.File(f)
+                    await ctx.send("| ~ ***CURRENT BOARD*** ~ |", file=picture)
+                    game.current_turn += 1
+                    if game.current_turn >= len(game.playerlist):
+                        game.current_turn = 0
+                    await ctx.send(f"{game.playerlist[game.current_turn].user.mention}, it's your turn!")
+                    game.already_drew = False
+                return
+                #TODO: custom logic here with both variables
+                #make sure to check if the color they chose is their own color
+
+           
             #if anything in spawn wait for sorry or 4
             #same piece choosing as 11
         #if game.current_card != Card.SEVEN and game.current_card != Card.TEN and game.current_card != Card.ELEVEN and game.current_card != Card.SORRY:
@@ -1257,6 +1544,7 @@ class Sorry(commands.Cog):
         reaction = await self.bot.wait_for("raw_reaction_add", check=check)
         if str(reaction.emoji) == "1️⃣":
             messages = game.move_piece({"color": game.playerlist[game.current_turn].color, "id": 1}, game.current_card.value[0])
+            await check_if_won(ctx)
             generate_board(game)
             with open("current_frame.png", "rb") as f:
                 picture = discord.File(f)
@@ -1283,6 +1571,7 @@ class Sorry(commands.Cog):
                 game.already_drew = False
         elif str(reaction.emoji) == "3️⃣":
             messages = game.move_piece({"color": game.playerlist[game.current_turn].color, "id": 3}, game.current_card.value[0])
+            await check_if_won(ctx)
             generate_board(game)
             with open("current_frame.png", "rb") as f:
                 picture = discord.File(f)
@@ -1315,12 +1604,8 @@ class Sorry(commands.Cog):
                     with open("current_frame.png", "rb") as f:
                         picture = discord.File(f)
                         _channel = self.bot.get_guild(reaction.guild_id).get_channel(reaction.channel_id)
-                        await _channel.send("**Here are the colors:**")
-                        _msg = "**"
-                        for i in game.playerlist:
-                            _msg = _msg + i.user.mention + ": " + str(i.color)[6:] + "\n"
-                        _msg = _msg + "**"
-                        await _channel.send(_msg)
+                        colorsembed = discord.Embed(title="Here are the Sorry! Colors:", description="\n".join([f":{str(i.color)[6:].lower()}_circle: {i.user.mention}" for i in game.playerlist]))
+                        await _channel.send(embed=colorsembed)
                         await _channel.send("| ~ ***CURRENT BOARD*** ~ |", file=picture)
                         await _channel.send(f"{game.playerlist[game.current_turn].user.mention}, it's your turn!")
 
